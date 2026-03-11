@@ -177,3 +177,53 @@
   .logout-btn:hover {
     color: #8E1523;
   }
+  /* ========================================= */
+/* --- ส่วนของ Stat Cards ใน Admin Dashboard --- */
+/* ========================================= */
+.admin-stat-grid {
+    display: flex;
+    gap: 24px;
+    width: 100%;
+  }
+  
+  .admin-card {
+    background: #ffffff;
+    border-radius: 12px;
+    padding: 24px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex: 1; /* บังคับให้แต่ละกล่องกว้างเท่ากัน */
+    box-shadow: 0 2px 10px rgba(0,0,0,0.03);
+    border: 1px solid #eaeaea;
+  }
+  
+  .card-info p {
+    margin: 0 0 8px 0;
+    color: #6c757d;
+    font-size: 14px;
+    font-weight: 500;
+  }
+  
+  .card-info h3 {
+    margin: 0;
+    color: #1a1a1a;
+    font-size: 28px;
+    font-weight: 700;
+  }
+  
+  .card-icon {
+    width: 52px;
+    height: 52px;
+    border-radius: 12px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    color: white;
+    flex-shrink: 0;
+  }
+  
+  /* ควบคุมสีแต่ละกล่อง */
+  .green-icon { background-color: #34A853; }
+  .red-icon { background-color: #8E1523; } /* สีแดง MFU */
+  .blue-icon { background-color: #2D68F8; }

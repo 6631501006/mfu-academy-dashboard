@@ -1,11 +1,25 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import './Admin.css'; // เรียกใช้ไฟล์ CSS ใหม่
 import mfuLogo from './assets/mfu-logo.png';
 
 function AdminDashboard() {
-  // สร้าง State เพื่อจำว่าตอนนี้กดเมนูไหนอยู่ (เริ่มต้นที่หน้า dashboard)
   const [activeTab, setActiveTab] = useState('dashboard');
   const [isProfileOpen, setIsProfileOpen] = useState(false);
+
+  // --- เพิ่ม State สำหรับเก็บข้อมูลสถิติ ---
+  const [adminStats, setAdminStats] = useState({
+    totalRevenue: 0,
+    totalCourses: 0,
+    totalLearners: 0
+  });
+
+  // --- ดึงข้อมูลจาก Backend เมื่อโหลดหน้าเว็บ ---
+  useEffect(() => {
+    fetch('http://localhost:5001/api/admin-stats')
+      .then(res => res.json())
+      .then(data => setAdminStats(data))
+      .catch(err => console.error("Error fetching stats:", err));
+  }, []);
 
   return (
     <div className="admin-layout">
@@ -14,16 +28,14 @@ function AdminDashboard() {
       {/* 1. Sidebar (เมนูด้านซ้าย) */}
       {/* ========================================== */}
       <aside className="admin-sidebar">
-        {/* โลโก้และชื่อโปรเจกต์ */}
         <div className="sidebar-brand">
-        <img src={mfuLogo} alt="MFU Logo" className="sidebar-logo-img" />
+          <img src={mfuLogo} alt="MFU Logo" className="sidebar-logo-img" />
           <div>
             <h2 style={{ color: '#8E1523', margin: 0, fontSize: '18px' }}>MFU Academy Dashboard</h2>
             <p style={{ color: '#666', margin: 0, fontSize: '12px' }}>Admin Panel</p>
           </div>
         </div>
 
-        {/* เมนูนำทาง (เหลือแค่ 3 Tabs ตามสั่ง) */}
         <nav className="sidebar-nav">
           <button 
             className={`nav-item ${activeTab === 'dashboard' ? 'active' : ''}`}
@@ -31,14 +43,12 @@ function AdminDashboard() {
           >
             <span className="nav-icon">⊞</span> Dashboard
           </button>
-
           <button 
             className={`nav-item ${activeTab === 'analytics' ? 'active' : ''}`}
             onClick={() => setActiveTab('analytics')}
           >
             <span className="nav-icon">📊</span> Analytics & Reports
           </button>
-
           <button 
             className={`nav-item ${activeTab === 'income' ? 'active' : ''}`}
             onClick={() => setActiveTab('income')}
@@ -53,7 +63,6 @@ function AdminDashboard() {
       {/* ========================================== */}
       <main className="admin-main">
         
-        {/* Header ด้านบน */}
         <header className="admin-header">
           <div>
             <h1 style={{ color: '#333', margin: '0 0 5px 0', fontSize: '20px' }}>
@@ -64,12 +73,8 @@ function AdminDashboard() {
             <p style={{ color: '#666', margin: 0, fontSize: '13px' }}>Mae Fah Luang University</p>
           </div>
 
-          {/* 2. แก้ไขส่วน Profile ให้คลิกได้และมี Dropdown */}
           <div className="admin-profile-container">
-            <div 
-              className="admin-profile-trigger" 
-              onClick={() => setIsProfileOpen(!isProfileOpen)}
-            >
+            <div className="admin-profile-trigger" onClick={() => setIsProfileOpen(!isProfileOpen)}>
               <div style={{ textAlign: 'right' }}>
                 <div style={{ fontSize: '16px', fontWeight: '500', color: '#6B2126' }}>Admin User</div>
                 <div style={{ fontSize: '14px', color: '#666' }}>Administrator</div>
@@ -77,18 +82,12 @@ function AdminDashboard() {
               <div className="profile-avatar">
                 <img src="https://ui-avatars.com/api/?name=Admin+User&background=8E1523&color=fff" alt="Admin" style={{ width: '100%', borderRadius: '50%' }}/>
               </div>
-              {/* ลูกศรชี้ลง เล็กๆ */}
               <span style={{ marginLeft: '5px', fontSize: '12px', color: '#666', transform: isProfileOpen ? 'rotate(180deg)' : 'none', transition: '0.3s' }}>▼</span>
             </div>
 
-            {/* กล่อง Dropdown ที่จะโชว์ตอน isProfileOpen เป็น true */}
             {isProfileOpen && (
               <div className="profile-dropdown">
-                <button 
-                  className="dropdown-item logout-btn"
-                  onClick={() => alert("ระบบกำลังทำการ Logout...")} // ใส่ฟังก์ชัน Logout จริงๆ ทีหลัง
-                >
-                  {/* ไอคอนออกจากระบบ */}
+                <button className="dropdown-item logout-btn" onClick={() => alert("ระบบกำลังทำการ Logout...")}>
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '10px' }}>
                     <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
                     <polyline points="16 17 21 12 16 7"></polyline>
@@ -101,14 +100,53 @@ function AdminDashboard() {
           </div>
         </header>
 
-        {/* พื้นที่สีขาวว่างๆ สำหรับใส่เนื้อหาในอนาคต */}
+        {/* --- พื้นที่แสดงเนื้อหาเปลี่ยนตาม Tab --- */}
         <div className="admin-content-area">
-          <div className="blank-white-page">
-            {/* ข้อความชั่วคราวเพื่อให้รู้ว่าอยู่หน้าไหน */}
-            <h2 style={{ color: '#ccc', textAlign: 'center', marginTop: '100px' }}>
-              พื้นที่ว่างสำหรับหน้า {activeTab.toUpperCase()}
-            </h2>
-          </div>
+          
+          {activeTab === 'dashboard' ? (
+            /* ถาอยู่หน้า Dashboard ให้แสดง Card ข้อมูล */
+            <div className="admin-stat-grid">
+              
+              <div className="admin-card">
+                <div className="card-info">
+                  <p>Total Gross Revenue</p>
+                  <h3>฿{adminStats.totalRevenue.toLocaleString()}</h3>
+                </div>
+                <div className="card-icon green-icon">
+                  <span style={{ fontSize: '24px', fontWeight: 'bold' }}>$</span>
+                </div>
+              </div>
+
+              <div className="admin-card">
+                <div className="card-info">
+                  <p>Total Courses</p>
+                  <h3>{adminStats.totalCourses.toLocaleString()}</h3>
+                </div>
+                <div className="card-icon red-icon">
+                  <span style={{ fontSize: '22px' }}>📖</span>
+                </div>
+              </div>
+
+              <div className="admin-card">
+                <div className="card-info">
+                  <p>Total Learners</p>
+                  <h3>{adminStats.totalLearners.toLocaleString()}</h3>
+                </div>
+                <div className="card-icon blue-icon">
+                  <span style={{ fontSize: '24px' }}>🎓</span>
+                </div>
+              </div>
+
+            </div>
+          ) : (
+            /* ถ้าเป็นหน้าอื่นให้แสดงกระดาษเปล่า */
+            <div className="blank-white-page">
+              <h2 style={{ color: '#ccc', textAlign: 'center', marginTop: '100px' }}>
+                พื้นที่ว่างสำหรับหน้า {activeTab.toUpperCase()}
+              </h2>
+            </div>
+          )}
+
         </div>
 
       </main>
