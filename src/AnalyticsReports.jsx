@@ -92,7 +92,7 @@ function AnalyticsReports() {
       </div>
 
       {/* --- 👇 กราฟแนวโน้มการซื้อคอร์ส 👇 --- */}
-      <div className="admin-chart-container" style={{ marginTop: '24px' ,bbackground: '#fff', padding: '24px', borderRadius: '12px', border: '1px solid #eaeaea', boxShadow: '0 2px 10px rgba(0,0,0,0.02)'}}>
+      <div className="admin-chart-container" style={{ marginTop: '24px' ,background: '#fff', padding: '24px', borderRadius: '12px', border: '1px solid #eaeaea', boxShadow: '0 2px 10px rgba(0,0,0,0.02)'}}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
           <h3 style={{ margin: 0, color: '#333', fontSize: '18px', fontWeight: '500' }}>Enrollment Trends</h3>
           
