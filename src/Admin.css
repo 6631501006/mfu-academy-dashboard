@@ -285,3 +285,94 @@
   font-weight: 500;
   color: #333;
 }
+/* ========================================= */
+/* 8. Analytics & Reports Page Styles */
+/* ========================================= */
+
+.analytics-filter-container {
+  background: #ffffff;
+  border: 1px solid #eaeaea;
+  border-radius: 8px;
+  padding: 16px 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+.filter-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.filter-label {
+  font-size: 15px;
+  color: #333;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.category-select {
+  padding: 8px 16px;
+  border: 1px solid #eaeaea;
+  border-radius: 6px;
+  background: #f4f6f8;
+  font-size: 14px;
+  outline: none;
+  min-width: 250px;
+  cursor: pointer;
+  color: #333;
+}
+
+/* ปุ่ม Export ตามดีไซน์ */
+.btn-export {
+  display: flex;
+  align-items: center;
+  padding: 8px 16px;
+  background: #fff;
+  border: 1px solid #eaeaea;
+  border-radius: 6px;
+  color: #333;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  text-decoration: none;
+  transition: all 0.2s;
+}
+
+.btn-export:hover {
+  background: #f9f9f9;
+  border-color: #ddd;
+}
+
+/* การ์ดแบบมินิมอล (Simple Cards) */
+.analytics-cards-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr; /* แบ่งครึ่งจอ */
+  gap: 24px;
+}
+
+.analytics-simple-card {
+  background: #ffffff;
+  border: 1px solid #eaeaea;
+  border-radius: 8px;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.analytics-simple-card p {
+  margin: 0 0 12px 0;
+  font-size: 15px;
+  color: #555;
+}
+
+.analytics-simple-card h3 {
+  margin: 0;
+  font-size: 28px;
+  color: #1a1a1a;
+  font-weight: 600;
+}
