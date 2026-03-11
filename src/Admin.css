@@ -227,3 +227,61 @@
   .green-icon { background-color: #34A853; }
   .red-icon { background-color: #8E1523; } /* สีแดง MFU */
   .blue-icon { background-color: #2D68F8; }
+
+  /* จัดการเนื้อหาภายในกล่องกราฟให้เป็นแนวตั้ง */
+.doughnut-chart-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center; /* จัดให้ทุกอย่างอยู่กึ่งกลางแนวนอน */
+  width: 100%;
+}
+
+/* ควบคุมขนาดวงกลมให้อยู่ตรงกลาง */
+.doughnut-wrapper {
+  position: relative;
+  height: 300px; /* ปรับขนาดความสูงตามต้องการ */
+  width: 300px;  /* ปรับขนาดความกว้างตามต้องการ */
+  margin-bottom: 40px; /* ระยะห่างระหว่างวงกลมกับคำอธิบายด้านล่าง */
+}
+
+/* จัดเลย์เอาต์คำอธิบายด้านล่างเป็น Grid 2 คอลัมน์ */
+.custom-legend-bottom {
+  display: grid;
+  grid-template-columns: 1fr 1fr; /* แบ่งซ้าย-ขวา 2 ฝั่งแบบในรูป */
+  gap: 20px 60px; /* ระยะห่างระหว่างแถว และ ระยะห่างระหว่างคอลัมน์ */
+  width: 100%;
+  max-width: 800px; /* จำกัดความกว้างเพื่อความสวยงาม */
+  padding: 20px;
+  border-top: 1px solid #f0f0f0; /* เส้นคั่นบางๆ ด้านบนคำอธิบาย */
+}
+
+/* สไตล์แต่ละรายการในคำอธิบาย */
+.legend-item-horizontal {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.legend-label {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.legend-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.legend-text {
+  font-size: 14px;
+  color: #666;
+}
+
+.legend-value {
+  font-size: 14px;
+  font-weight: 500;
+  color: #333;
+}

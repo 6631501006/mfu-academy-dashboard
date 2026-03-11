@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import './Admin.css';
 import mfuLogo from './assets/mfu-logo.png';
-import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, Tooltip, Legend } from 'chart.js';
-import { Line } from 'react-chartjs-2';
+// 👇 1. เพิ่ม ArcElement และ Doughnut สำหรับกราฟวงแหวน
+import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, ArcElement, Tooltip, Legend } from 'chart.js';
+import { Line, Doughnut } from 'react-chartjs-2';
 
-ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Tooltip, Legend);
+// 👇 2. อย่าลืม Register ArcElement
+ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, ArcElement, Tooltip, Legend);
 
 function AdminDashboard() {
   const [activeTab, setActiveTab] = useState('dashboard');
@@ -18,12 +20,25 @@ function AdminDashboard() {
   });
 
   const [monthlyData, setMonthlyData] = useState(new Array(12).fill(0));
+  
+  // 👇 3. เพิ่ม State สำหรับเก็บข้อมูลสัดส่วนผู้เรียน
+  const [categoryDist, setCategoryDist] = useState([]);
+
+  // 👇 กำหนดสีประจำหมวดหมู่ (โทนสีเข้ากับตีม MFU)
+  const categoryColors = ['#8E1523', '#D4A038', '#C42026', '#E06D53', '#E8907E', '#4C5A73'];
 
   useEffect(() => {
+    // ดึงข้อมูลสถิติรวม
     fetch('http://localhost:5001/api/admin-stats')
       .then(res => res.json())
       .then(data => setAdminStats(data))
       .catch(err => console.error("Error fetching stats:", err));
+
+    // 👇 ดึงข้อมูลกราฟวงแหวน (Category Distribution)
+    fetch('http://localhost:5001/api/admin-category-dist')
+      .then(res => res.json())
+      .then(data => setCategoryDist(data))
+      .catch(err => console.error("Error fetching category dist:", err));
   }, []);
 
   useEffect(() => {
@@ -93,6 +108,7 @@ function AdminDashboard() {
         <div className="admin-content-area">
           {activeTab === 'dashboard' ? (
             <div>
+              {/* --- 1. Stat Cards --- */}
               <div className="admin-stat-grid">
                 <div className="admin-card">
                   <div className="card-info"><p>Total Gross Revenue</p><h3>฿{adminStats.totalRevenue.toLocaleString()}</h3></div>
@@ -108,6 +124,7 @@ function AdminDashboard() {
                 </div>
               </div>
 
+              {/* --- 2. Monthly Income Line Chart --- */}
               <div className="admin-chart-container" style={{ marginTop: '30px', background: '#fff', padding: '24px', borderRadius: '12px', border: '1px solid #eaeaea', boxShadow: '0 2px 10px rgba(0,0,0,0.02)' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
                   <h3 style={{ margin: 0, color: '#333', fontSize: '18px', fontWeight: '500' }}>Monthly Income Trends</h3>
@@ -144,7 +161,7 @@ function AdminDashboard() {
                       scales: {
                         y: { 
                           beginAtZero: true,
-                          min: 0, // 👈 ล็อคไว้ให้เริ่มที่ 0 เสมอ ไม่ติดลบแน่นอน
+                          min: 0,
                           grid: { color: '#f0f0f0', borderDash: [5, 5] },
                           ticks: { color: '#999', font: { size: 12 } }
                         },
@@ -157,6 +174,52 @@ function AdminDashboard() {
                   />
                 </div>
               </div>
+
+              {/* --- 3. Learner Distribution Doughnut Chart --- */}
+<div className="admin-chart-container" style={{ marginTop: '30px', background: '#fff', padding: '24px', borderRadius: '12px', border: '1px solid #eaeaea', boxShadow: '0 2px 10px rgba(0,0,0,0.02)' }}>
+  <div style={{ marginBottom: '20px' }}>
+    <h3 style={{ margin: 0, color: '#333', fontSize: '18px', fontWeight: '500' }}>Learner Distribution by Category</h3>
+  </div>
+  
+  {/* ปรับ Container หลักให้เป็นแนวตั้ง และจัดทุกอย่างให้อยู่กึ่งกลาง */}
+  <div className="doughnut-chart-content">
+    
+    {/* กล่องใส่กราฟวงแหวน - จัดให้อยู่ตรงกลางเสมอ */}
+    <div className="doughnut-wrapper">
+      <Doughnut 
+        data={{
+          labels: categoryDist.map(d => d.label),
+          datasets: [{
+            data: categoryDist.map(d => d.value),
+            backgroundColor: categoryColors,
+            borderWidth: 0,
+            hoverOffset: 5
+          }]
+        }} 
+        options={{ 
+          maintainAspectRatio: false, 
+          cutout: '65%', 
+          plugins: { legend: { display: false } } 
+        }} 
+      />
+    </div>
+
+    {/* กล่องใส่คำอธิบาย (Legend) - ย้ายมาอยู่ด้านล่างและจัดเป็น Grid 2 คอลัมน์แบบในภาพต้นฉบับ */}
+    <div className="custom-legend-bottom">
+      {categoryDist.map((item, index) => (
+        <div key={index} className="legend-item-horizontal">
+          <div className="legend-label">
+            <span className="legend-dot" style={{ backgroundColor: categoryColors[index % categoryColors.length] }}></span>
+            <span className="legend-text">{item.label}</span>
+          </div>
+          <div className="legend-value">{item.value.toLocaleString()} Learners</div>
+        </div>
+      ))}
+    </div>
+
+  </div>
+</div>
+
             </div>
           ) : (
             <div className="blank-white-page">
