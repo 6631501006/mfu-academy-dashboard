@@ -1,0 +1,179 @@
+/* โครงสร้างหลักแบบแยกซ้าย-ขวา */
+.admin-layout {
+    display: flex;
+    height: 100vh;
+    width: 100vw;
+    background-color: #f4f6f8;
+    font-family: 'Inter', sans-serif;
+  }
+  
+  /* --- Sidebar ด้านซ้าย --- */
+  .admin-sidebar {
+    width: 260px;
+    background-color: #ffffff;
+    border-right: 1px solid #eaeaea;
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .sidebar-brand {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    padding: 30px 25px;
+    border-bottom: 1px solid #f0f0f0;
+  }
+  
+  .sidebar-logo-img {
+    height: 40px; /* ปรับความสูงโลโก้ให้พอดีกับแถบ */
+    width: auto;
+    object-fit: contain;
+    flex-shrink: 0; /* ป้องกันไม่ให้โลโก้โดนบีบ */
+  }
+  
+  .sidebar-nav {
+    padding: 20px 15px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  
+  .nav-item {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    padding: 12px 15px;
+    border-radius: 8px;
+    border: none;
+    background: transparent;
+    color: #555;
+    font-size: 15px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-align: left;
+  }
+  
+  .nav-item:hover {
+    background: #f9f9f9;
+  }
+  
+  /* สไตล์ตอนที่เมนูนั้นถูกกด (Active) */
+  .nav-item.active {
+    background: #FCE7E9;
+    color: #8E1523;
+    font-weight: 600;
+  }
+  
+  .nav-icon {
+    font-size: 18px;
+  }
+  
+  /* --- Main Content ด้านขวา --- */
+  .admin-main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden; /* ป้องกันหน้าจอเลื่อนแนวนอน */
+  }
+  
+  .admin-header {
+    background-color: #ffffff;
+    padding: 20px 40px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid #eaeaea;
+  }
+  
+  /* ใช้โค้ดนี้แทน .profile-avatar ทั้งหมด */
+.profile-avatar {
+    width: 45px;
+    height: 45px;
+    border-radius: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    overflow: hidden; /* เพิ่มคำสั่งนี้เพื่อไม่ให้ขอบรูปทะลุวงกลม */
+  }
+  
+  /* --- พื้นที่เนื้อหาสีขาว --- */
+  .admin-content-area {
+    padding: 40px;
+    flex: 1;
+    overflow-y: auto; /* ให้เลื่อนลงได้ถ้าเนื้อหายาว */
+  }
+  
+  .blank-white-page {
+    background: #ffffff;
+    border-radius: 12px;
+    width: 100%;
+    height: 100%;
+    min-height: 500px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.02);
+    border: 1px solid #eaeaea;
+  }
+  /* --- ส่วนจัดการ Profile & Dropdown --- */
+.admin-profile-container {
+    position: relative; /* สำคัญมาก เพื่อให้ Dropdown เกาะอยู่ใต้ Profile */
+  }
+  
+  .admin-profile-trigger {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    cursor: pointer;
+    padding: 8px 12px;
+    border-radius: 8px;
+    transition: background 0.2s;
+  }
+  
+  .admin-profile-trigger:hover {
+    background: #f9f9f9;
+  }
+  
+  /* กล่อง Dropdown */
+  .profile-dropdown {
+    position: absolute;
+    top: 100%; /* ให้เริ่มต่อจากขอบล่างของ Profile พอดี */
+    right: 0;
+    margin-top: 10px;
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+    border: 1px solid #eaeaea;
+    width: 200px;
+    padding: 10px 0;
+    z-index: 1000;
+    animation: slideDown 0.2s ease-out; /* เพิ่มแอนิเมชันเด้งลงมา */
+  }
+  
+  @keyframes slideDown {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  
+  /* ปุ่มด้านใน Dropdown */
+  .dropdown-item {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    padding: 12px 20px;
+    background: none;
+    border: none;
+    text-align: left;
+    font-size: 16px;
+    color: #333;
+    cursor: pointer;
+    transition: background 0.2s;
+    font-family: inherit;
+  }
+  
+  .dropdown-item:hover {
+    background: #f4f6f8;
+  }
+  
+  /* เปลี่ยนสีเมื่อชี้ไปที่ปุ่ม Logout */
+  .logout-btn:hover {
+    color: #8E1523;
+  }
