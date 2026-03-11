@@ -1,19 +1,24 @@
 import React, { useState, useEffect } from 'react';
-import './Admin.css'; // เรียกใช้ไฟล์ CSS ใหม่
+import './Admin.css';
 import mfuLogo from './assets/mfu-logo.png';
+import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, Tooltip, Legend } from 'chart.js';
+import { Line } from 'react-chartjs-2';
+
+ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Tooltip, Legend);
 
 function AdminDashboard() {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
 
-  // --- เพิ่ม State สำหรับเก็บข้อมูลสถิติ ---
   const [adminStats, setAdminStats] = useState({
     totalRevenue: 0,
     totalCourses: 0,
     totalLearners: 0
   });
 
-  // --- ดึงข้อมูลจาก Backend เมื่อโหลดหน้าเว็บ ---
+  const [monthlyData, setMonthlyData] = useState(new Array(12).fill(0));
+
   useEffect(() => {
     fetch('http://localhost:5001/api/admin-stats')
       .then(res => res.json())
@@ -21,12 +26,25 @@ function AdminDashboard() {
       .catch(err => console.error("Error fetching stats:", err));
   }, []);
 
+  useEffect(() => {
+    fetch(`http://localhost:5001/api/monthly-income?year=${selectedYear}`)
+      .then(res => res.json())
+      .then(data => {
+        let chartData = new Array(12).fill(0);
+        data.forEach(item => {
+          const m = parseInt(item.month);
+          if(m >= 1 && m <= 12) {
+            chartData[m - 1] = parseFloat(item.total);
+          }
+        });
+        setMonthlyData(chartData);
+      })
+      .catch(err => console.error("Error fetching line chart:", err));
+  }, [selectedYear]);
+
   return (
     <div className="admin-layout">
-      
-      {/* ========================================== */}
-      {/* 1. Sidebar (เมนูด้านซ้าย) */}
-      {/* ========================================== */}
+      {/* Sidebar Section */}
       <aside className="admin-sidebar">
         <div className="sidebar-brand">
           <img src={mfuLogo} alt="MFU Logo" className="sidebar-logo-img" />
@@ -35,34 +53,15 @@ function AdminDashboard() {
             <p style={{ color: '#666', margin: 0, fontSize: '12px' }}>Admin Panel</p>
           </div>
         </div>
-
         <nav className="sidebar-nav">
-          <button 
-            className={`nav-item ${activeTab === 'dashboard' ? 'active' : ''}`}
-            onClick={() => setActiveTab('dashboard')}
-          >
-            <span className="nav-icon">⊞</span> Dashboard
-          </button>
-          <button 
-            className={`nav-item ${activeTab === 'analytics' ? 'active' : ''}`}
-            onClick={() => setActiveTab('analytics')}
-          >
-            <span className="nav-icon">📊</span> Analytics & Reports
-          </button>
-          <button 
-            className={`nav-item ${activeTab === 'income' ? 'active' : ''}`}
-            onClick={() => setActiveTab('income')}
-          >
-            <span className="nav-icon">💲</span> Income Report
-          </button>
+          <button className={`nav-item ${activeTab === 'dashboard' ? 'active' : ''}`} onClick={() => setActiveTab('dashboard')}><span className="nav-icon">⊞</span> Dashboard</button>
+          <button className={`nav-item ${activeTab === 'analytics' ? 'active' : ''}`} onClick={() => setActiveTab('analytics')}><span className="nav-icon">📊</span> Analytics & Reports</button>
+          <button className={`nav-item ${activeTab === 'income' ? 'active' : ''}`} onClick={() => setActiveTab('income')}><span className="nav-icon">💲</span> Income Report</button>
         </nav>
       </aside>
 
-      {/* ========================================== */}
-      {/* 2. Main Content (พื้นที่เนื้อหาด้านขวา) */}
-      {/* ========================================== */}
+      {/* Main Content Section */}
       <main className="admin-main">
-        
         <header className="admin-header">
           <div>
             <h1 style={{ color: '#333', margin: '0 0 5px 0', fontSize: '20px' }}>
@@ -72,7 +71,6 @@ function AdminDashboard() {
             </h1>
             <p style={{ color: '#666', margin: 0, fontSize: '13px' }}>Mae Fah Luang University</p>
           </div>
-
           <div className="admin-profile-container">
             <div className="admin-profile-trigger" onClick={() => setIsProfileOpen(!isProfileOpen)}>
               <div style={{ textAlign: 'right' }}>
@@ -84,71 +82,90 @@ function AdminDashboard() {
               </div>
               <span style={{ marginLeft: '5px', fontSize: '12px', color: '#666', transform: isProfileOpen ? 'rotate(180deg)' : 'none', transition: '0.3s' }}>▼</span>
             </div>
-
             {isProfileOpen && (
               <div className="profile-dropdown">
-                <button className="dropdown-item logout-btn" onClick={() => alert("ระบบกำลังทำการ Logout...")}>
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '10px' }}>
-                    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
-                    <polyline points="16 17 21 12 16 7"></polyline>
-                    <line x1="21" y1="12" x2="9" y2="12"></line>
-                  </svg>
-                  Logout
-                </button>
+                <button className="dropdown-item logout-btn" onClick={() => alert("Logout Success")}>Logout</button>
               </div>
             )}
           </div>
         </header>
 
-        {/* --- พื้นที่แสดงเนื้อหาเปลี่ยนตาม Tab --- */}
         <div className="admin-content-area">
-          
           {activeTab === 'dashboard' ? (
-            /* ถาอยู่หน้า Dashboard ให้แสดง Card ข้อมูล */
-            <div className="admin-stat-grid">
-              
-              <div className="admin-card">
-                <div className="card-info">
-                  <p>Total Gross Revenue</p>
-                  <h3>฿{adminStats.totalRevenue.toLocaleString()}</h3>
+            <div>
+              <div className="admin-stat-grid">
+                <div className="admin-card">
+                  <div className="card-info"><p>Total Gross Revenue</p><h3>฿{adminStats.totalRevenue.toLocaleString()}</h3></div>
+                  <div className="card-icon green-icon"><span>$</span></div>
                 </div>
-                <div className="card-icon green-icon">
-                  <span style={{ fontSize: '24px', fontWeight: 'bold' }}>$</span>
+                <div className="admin-card">
+                  <div className="card-info"><p>Total Courses</p><h3>{adminStats.totalCourses.toLocaleString()}</h3></div>
+                  <div className="card-icon red-icon"><span>📖</span></div>
                 </div>
-              </div>
-
-              <div className="admin-card">
-                <div className="card-info">
-                  <p>Total Courses</p>
-                  <h3>{adminStats.totalCourses.toLocaleString()}</h3>
-                </div>
-                <div className="card-icon red-icon">
-                  <span style={{ fontSize: '22px' }}>📖</span>
+                <div className="admin-card">
+                  <div className="card-info"><p>Total Learners</p><h3>{adminStats.totalLearners.toLocaleString()}</h3></div>
+                  <div className="card-icon blue-icon"><span>🎓</span></div>
                 </div>
               </div>
 
-              <div className="admin-card">
-                <div className="card-info">
-                  <p>Total Learners</p>
-                  <h3>{adminStats.totalLearners.toLocaleString()}</h3>
+              <div className="admin-chart-container" style={{ marginTop: '30px', background: '#fff', padding: '24px', borderRadius: '12px', border: '1px solid #eaeaea', boxShadow: '0 2px 10px rgba(0,0,0,0.02)' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+                  <h3 style={{ margin: 0, color: '#333', fontSize: '18px', fontWeight: '500' }}>Monthly Income Trends</h3>
+                  <select 
+                    value={selectedYear} 
+                    onChange={(e) => setSelectedYear(e.target.value)}
+                    style={{ padding: '8px 12px', borderRadius: '6px', border: '1px solid #ddd', cursor: 'pointer', outline: 'none' }}
+                  >
+                    <option value="2024">2024</option>
+                    <option value="2025">2025</option>
+                    <option value="2026">2026</option>
+                  </select>
                 </div>
-                <div className="card-icon blue-icon">
-                  <span style={{ fontSize: '24px' }}>🎓</span>
+
+                <div style={{ height: '350px', width: '100%' }}>
+                  <Line 
+                    data={{
+                      labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+                      datasets: [{
+                        label: 'Revenue (THB)',
+                        data: monthlyData,
+                        borderColor: '#8E1523',
+                        backgroundColor: '#8E1523',
+                        borderWidth: 3,
+                        pointBackgroundColor: '#8E1523',
+                        pointRadius: 4,
+                        tension: 0.4
+                      }]
+                    }}
+                    options={{
+                      responsive: true,
+                      maintainAspectRatio: false,
+                      plugins: { legend: { display: false } },
+                      scales: {
+                        y: { 
+                          beginAtZero: true,
+                          min: 0, // 👈 ล็อคไว้ให้เริ่มที่ 0 เสมอ ไม่ติดลบแน่นอน
+                          grid: { color: '#f0f0f0', borderDash: [5, 5] },
+                          ticks: { color: '#999', font: { size: 12 } }
+                        },
+                        x: {
+                          grid: { display: false },
+                          ticks: { color: '#999', font: { size: 12 } }
+                        }
+                      }
+                    }}
+                  />
                 </div>
               </div>
-
             </div>
           ) : (
-            /* ถ้าเป็นหน้าอื่นให้แสดงกระดาษเปล่า */
             <div className="blank-white-page">
               <h2 style={{ color: '#ccc', textAlign: 'center', marginTop: '100px' }}>
                 พื้นที่ว่างสำหรับหน้า {activeTab.toUpperCase()}
               </h2>
             </div>
           )}
-
         </div>
-
       </main>
     </div>
   );
