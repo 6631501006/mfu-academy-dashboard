@@ -122,7 +122,13 @@ function App() {
                     labels: topCourses.map(item => item.name),
                     datasets: [{ label: 'Enrollments', data: topCourses.map(item => item.value), backgroundColor: '#8E1523', borderRadius: 4 }]
                   }} 
-                  options={{ indexAxis: 'y', maintainAspectRatio: false, plugins: { legend: { display: false } } }} 
+                  options={{ indexAxis: 'y', maintainAspectRatio: false, plugins: { legend: { display: false } },scales: {
+                    x: {
+                      ticks: {
+                        stepSize: 1 // บังคับให้เพิ่มทีละ 1 เป็นจำนวนเต็มเสมอ
+                      }
+                    }
+                  } }} 
                 />
               </div>
             </div>
