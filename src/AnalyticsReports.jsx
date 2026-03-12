@@ -4,9 +4,6 @@ import { CSVLink } from "react-csv";
 import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, Tooltip, Legend } from 'chart.js';
 import { Line } from 'react-chartjs-2';
 
-// 👇 2. Register กราฟ
-ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Tooltip, Legend);
-
 function AnalyticsReports() {
   const [categories, setCategories] = useState([]);
   const [selectedCat, setSelectedCat] = useState('all');

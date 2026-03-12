@@ -2,8 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, ArcElement, Tooltip, Legend } from 'chart.js';
 import { Line, Doughnut } from 'react-chartjs-2';
 
-ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, ArcElement, Tooltip, Legend);
-
 function DashboardOverview() {
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   const [adminStats, setAdminStats] = useState({ totalRevenue: 0, totalCourses: 0, totalLearners: 0 });
