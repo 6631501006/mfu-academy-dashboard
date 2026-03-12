@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import './App.css';
 import { Chart as ChartJS, ArcElement, Tooltip, Legend, CategoryScale, LinearScale, BarElement } from 'chart.js';
-import { Doughnut, Bar } from 'react-chartjs-2';
+import { Doughnut as DoughnutChart, Bar as BarChart } from 'react-chartjs-2'; 
 import mfuLogo from './assets/mfu-logo.png';
+import AdminDashboard from './AdminDashboard';
 
 ChartJS.register(ArcElement, Tooltip, Legend, CategoryScale, LinearScale, BarElement);
 
@@ -13,7 +14,13 @@ function App() {
   const [catDist, setCatDist] = useState([]);
   const [selectedCat, setSelectedCat] = useState('all');
 
-  // ฟังก์ชันดึงข้อมูลทั้งหมด
+  const [username, setUsername] = useState(''); 
+  const [password, setPassword] = useState('');
+  const [loginError, setLoginError] = useState('');
+
+  // 👇 1. เพิ่ม State สำหรับเก็บข้อมูล User เมื่อล็อกอินสำเร็จ
+  const [loggedInUser, setLoggedInUser] = useState(null);
+
   const fetchData = (catId) => {
     fetch(`http://localhost:5001/api/stats?categoryId=${catId}`)
       .then(res => res.json()).then(data => setStats(data));
@@ -25,8 +32,95 @@ function App() {
       .then(res => res.json()).then(data => setCatDist(data));
   };
 
-  useEffect(() => { fetchData(selectedCat); }, [selectedCat]);
+  useEffect(() => { 
+    if (view === 'general') {
+      fetchData(selectedCat); 
+    }
+  }, [selectedCat, view]);
 
+  const handleLoginSubmit = async (e) => {
+    e.preventDefault();
+    setLoginError('');
+
+    try {
+      const response = await fetch('http://localhost:5001/api/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username: username, password: password }) 
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.success) {
+        // 👇 2. ลบ alert ทิ้ง และเก็บข้อมูล User เข้า State แทน
+        setLoggedInUser(data.user);
+        setView('admin'); 
+        setUsername('');
+        setPassword('');
+      } else {
+        setLoginError(data.message || "Login failed"); 
+      }
+    } catch (err) {
+      setLoginError("Failed to connect to the server.");
+    }
+  };
+
+  // 👇 3. แก้ไขหน้า ADMIN DASHBOARD (ลบปุ่มดำทิ้ง และส่ง Props ไปให้ AdminDashboard)
+  if (view === 'admin') {
+    return (
+      <AdminDashboard 
+        user={loggedInUser} 
+        setView={setView} 
+        setLoggedInUser={setLoggedInUser} 
+      />
+    );
+  }
+
+  // --- หน้า LOGIN FORM ---
+  if (view === 'login') {
+    return (
+      <div className="login-page-wrapper">
+        <div className="login-box">
+          <img src={mfuLogo} alt="MFU Logo" className="login-logo" />
+          <h2>Admin Login</h2>
+          <p className="login-subtitle">Please sign in to access the dashboard</p>
+          
+          <form onSubmit={handleLoginSubmit}>
+            <div className="input-group">
+              <label>Email / Username</label>
+              <input 
+                type="text" 
+                value={username} 
+                onChange={(e) => setUsername(e.target.value)} 
+                required 
+                placeholder="Enter your email" 
+              />
+            </div>
+            <div className="input-group">
+              <label>Password</label>
+              <input 
+                type="password" 
+                value={password} 
+                onChange={(e) => setPassword(e.target.value)} 
+                required 
+                placeholder="Enter password" 
+              />
+            </div>
+
+            {loginError && <div className="error-message">{loginError}</div>}
+
+            <button type="submit" className="login-submit-btn">Sign In</button>
+          </form>
+          
+          <button onClick={() => setView('general')} className="back-link">
+            &larr; Back to Public Dashboard
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // --- หน้า PUBLIC DASHBOARD ---
   return (
       <>
         {/* --- 1. Navbar (แถบบนสุด) --- */}
@@ -37,37 +131,25 @@ function App() {
             <h2 style={{ color: '#8E1523', margin: 0, fontSize: '20px' }}>MFU Academy Dashboard</h2>
           </div>
   
-          {/* ฝั่งขวา: ปุ่ม Login / Logout */}
+          {/* ฝั่งขวา: ปุ่ม Login */}
           <div>
-            {view === 'general' ? (
-              <button 
-                onClick={() => setView('login')}
-                style={{ padding: '8px 20px', borderRadius: '8px', background: '#8E1523', color: '#fff', border: 'none', cursor: 'pointer', fontWeight: 'bold' }}
-              >
-                Admin Login
-              </button>
-            ) : (
-              <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
-                <span style={{ fontSize: '14px', fontWeight: 'bold', color: '#8E1523' }}>● Admin Mode</span>
-                <button 
-                  onClick={() => setView('general')}
-                  style={{ padding: '8px 20px', borderRadius: '8px', background: '#333', color: '#fff', border: 'none', cursor: 'pointer', fontWeight: 'bold' }}
-                >
-                  Logout
-                </button>
-              </div>
-            )}
+            <button 
+              onClick={() => setView('login')}
+              style={{ padding: '8px 20px', borderRadius: '8px', background: '#8E1523', color: '#fff', border: 'none', cursor: 'pointer', fontWeight: 'bold' }}
+            >
+              Admin Login
+            </button>
           </div>
         </nav>
   
         {/* --- 2. เนื้อหา Dashboard (อยู่ใต้ Navbar) --- */}
         <div className="dashboard-wrapper">
           
-          {/* Header ของ Dashboard (เหลือแค่ชื่อหน้าและระบบ Filter) */}
+          {/* Header ของ Dashboard */}
           <div className="header-section">
             <div>
               <h1 style={{ color: '#8E1523', margin: '0 0 5px 0', fontSize: '24px' }}>
-                {view === 'admin' ? 'MFU Admin Analytics' : 'Dashboard Overview'}
+                Dashboard Overview
               </h1>
               <p style={{ color: '#666', margin: 0, fontSize: '14px' }}>Mae Fah Luang University</p>
             </div>
@@ -93,7 +175,7 @@ function App() {
             </div>
           </div>
   
-          {/* --- Stat Cards (โค้ดเดิม) --- */}
+          {/* --- Stat Cards --- */}
           <div className="stat-container">
             <div className="stat-card">
               <div className="stat-info">
@@ -112,23 +194,28 @@ function App() {
             </div>
           </div>
   
-          {/* --- Charts (โค้ดเดิม) --- */}
+          {/* --- Charts --- */}
           <div className="chart-container">
             <div className="chart-card" style={{ flex: 1.5 }}>
               <h3 style={{ margin: '0 0 20px 0', color: '#333' }}>Top 5 Course Popularity</h3>
               <div style={{ height: '350px', position: 'relative' }}> 
-                <Bar 
+                <BarChart 
                   data={{
                     labels: topCourses.map(item => item.name),
                     datasets: [{ label: 'Enrollments', data: topCourses.map(item => item.value), backgroundColor: '#8E1523', borderRadius: 4 }]
                   }} 
-                  options={{ indexAxis: 'y', maintainAspectRatio: false, plugins: { legend: { display: false } },scales: {
-                    x: {
-                      ticks: {
-                        stepSize: 1 // บังคับให้เพิ่มทีละ 1 เป็นจำนวนเต็มเสมอ
+                  options={{ 
+                    indexAxis: 'y', 
+                    maintainAspectRatio: false, 
+                    plugins: { legend: { display: false } },
+                    scales: {
+                      x: {
+                        ticks: {
+                          stepSize: 1 // บังคับให้เพิ่มทีละ 1 เป็นจำนวนเต็มเสมอ
+                        }
                       }
-                    }
-                  } }} 
+                    } 
+                  }} 
                 />
               </div>
             </div>
@@ -136,7 +223,7 @@ function App() {
             <div className="chart-card" style={{ flex: 1 }}>
               <h3 style={{ margin: '0 0 20px 0', color: '#333' }}>Course Categories</h3>
               <div style={{ position: 'relative', height: '300px', width: '100%', display: 'flex', justifyContent: 'center' }}>
-                <Doughnut 
+                <DoughnutChart 
                   data={{
                     labels: catDist.map(item => item.label), 
                     datasets: [{ data: catDist.map(item => item.value), backgroundColor: ['#8E1523', '#BD9946', '#D9D9D9', '#333333'], borderWidth: 0, hoverOffset: 4 }]

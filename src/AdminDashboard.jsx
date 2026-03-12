@@ -7,9 +7,16 @@ import DashboardOverview from './DashboardOverview';
 import AnalyticsReports from './AnalyticsReports';
 import IncomeReport from './IncomeReport';
 
-function AdminDashboard() {
+// 👇 1. รับ Props user, setView, setLoggedInUser เข้ามา
+function AdminDashboard({ user, setView, setLoggedInUser }) {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [isProfileOpen, setIsProfileOpen] = useState(false);
+
+  // 👇 2. สร้างฟังก์ชัน Logout เพื่อกลับไปหน้า Public
+  const handleLogout = () => {
+    setLoggedInUser(null); // เคลียร์ข้อมูล User
+    setView('general');    // กลับไปหน้า Public Dashboard
+  };
 
   // ฟังก์ชันสำหรับสลับแสดงผลหน้าต่างๆ ตาม Tab ที่เลือก
   const renderContent = () => {
@@ -24,6 +31,11 @@ function AdminDashboard() {
         return <DashboardOverview />;
     }
   };
+
+  // 👇 3. เตรียมข้อมูลชื่อ นามสกุล และสิทธิ์ (มี Fallback เผื่อไว้)
+  const firstName = user?.firstname || 'Admin';
+  const lastName = user?.lastname || 'User';
+  const roleName = user?.role || 'Administrator';
 
   return (
     <div className="admin-layout">
@@ -56,18 +68,30 @@ function AdminDashboard() {
           </div>
           <div className="admin-profile-container">
             <div className="admin-profile-trigger" onClick={() => setIsProfileOpen(!isProfileOpen)}>
+              
               <div style={{ textAlign: 'right' }}>
-                <div style={{ fontSize: '16px', fontWeight: '500', color: '#6B2126' }}>Admin User</div>
-                <div style={{ fontSize: '14px', color: '#666' }}>Administrator</div>
+                {/* 👇 4. แสดงชื่อ นามสกุล และ Role จาก Database */}
+                <div style={{ fontSize: '16px', fontWeight: '500', color: '#6B2126' }}>
+                  {firstName} {lastName}
+                </div>
+                <div style={{ fontSize: '14px', color: '#666' }}>{roleName}</div>
               </div>
+              
               <div className="profile-avatar">
-                <img src="https://ui-avatars.com/api/?name=Admin+User&background=8E1523&color=fff" alt="Admin" style={{ width: '100%', borderRadius: '50%' }}/>
+                {/* 👇 5. ดึงตัวย่อจากชื่อ-นามสกุลจริงมาทำเป็นรูปโปรไฟล์ */}
+                <img 
+                  src={`https://ui-avatars.com/api/?name=${firstName}+${lastName}&background=8E1523&color=fff`} 
+                  alt="Admin Avatar" 
+                  style={{ width: '100%', borderRadius: '50%' }}
+                />
               </div>
               <span style={{ marginLeft: '5px', fontSize: '12px', color: '#666', transform: isProfileOpen ? 'rotate(180deg)' : 'none', transition: '0.3s' }}>▼</span>
             </div>
+            
             {isProfileOpen && (
               <div className="profile-dropdown">
-                <button className="dropdown-item logout-btn" onClick={() => alert("Logout Success")}>Logout</button>
+                {/* 👇 6. เรียกใช้ฟังก์ชัน handleLogout เมื่อกดปุ่ม */}
+                <button className="dropdown-item logout-btn" onClick={handleLogout}>Logout</button>
               </div>
             )}
           </div>
