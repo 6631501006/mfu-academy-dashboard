@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import './App.css';
-import { Chart as ChartJS, ArcElement, Tooltip, Legend, CategoryScale, LinearScale, BarElement } from 'chart.js';
+// 👇 1. เพิ่ม PointElement และ LineElement เข้ามาในนี้
+import { Chart as ChartJS, ArcElement, Tooltip, Legend, CategoryScale, LinearScale, BarElement, PointElement, LineElement } from 'chart.js';
 import { Doughnut as DoughnutChart, Bar as BarChart } from 'react-chartjs-2'; 
 import mfuLogo from './assets/mfu-logo.png';
 import AdminDashboard from './AdminDashboard';
 
-ChartJS.register(ArcElement, Tooltip, Legend, CategoryScale, LinearScale, BarElement);
+// 👇 2. Register PointElement และ LineElement ด้วย
+ChartJS.register(ArcElement, Tooltip, Legend, CategoryScale, LinearScale, BarElement, PointElement, LineElement);
 
 function App() {
   const [view, setView] = useState('general');
