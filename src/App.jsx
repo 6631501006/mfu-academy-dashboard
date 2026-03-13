@@ -1,12 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import './App.css';
-// 👇 1. เพิ่ม PointElement และ LineElement เข้ามาในนี้
 import { Chart as ChartJS, ArcElement, Tooltip, Legend, CategoryScale, LinearScale, BarElement, PointElement, LineElement } from 'chart.js';
 import { Doughnut as DoughnutChart, Bar as BarChart } from 'react-chartjs-2'; 
 import mfuLogo from './assets/mfu-logo.png';
 import AdminDashboard from './AdminDashboard';
 
-// 👇 2. Register PointElement และ LineElement ด้วย
 ChartJS.register(ArcElement, Tooltip, Legend, CategoryScale, LinearScale, BarElement, PointElement, LineElement);
 
 function App() {
@@ -20,7 +18,7 @@ function App() {
   const [password, setPassword] = useState('');
   const [loginError, setLoginError] = useState('');
 
-  // 👇 1. เพิ่ม State สำหรับเก็บข้อมูล User เมื่อล็อกอินสำเร็จ
+  //  1. เพิ่ม State สำหรับเก็บข้อมูล User เมื่อล็อกอินสำเร็จ
   const [loggedInUser, setLoggedInUser] = useState(null);
 
   const fetchData = (catId) => {
@@ -54,7 +52,7 @@ function App() {
       const data = await response.json();
 
       if (response.ok && data.success) {
-        // 👇 2. ลบ alert ทิ้ง และเก็บข้อมูล User เข้า State แทน
+        // 2.เก็บข้อมูล User เข้า State 
         setLoggedInUser(data.user);
         setView('admin'); 
         setUsername('');
@@ -67,7 +65,7 @@ function App() {
     }
   };
 
-  // 👇 3. แก้ไขหน้า ADMIN DASHBOARD (ลบปุ่มดำทิ้ง และส่ง Props ไปให้ AdminDashboard)
+  //3.หน้า ADMIN DASHBOARD 
   if (view === 'admin') {
     return (
       <AdminDashboard 
@@ -213,7 +211,7 @@ function App() {
                     scales: {
                       x: {
                         ticks: {
-                          stepSize: 1 // บังคับให้เพิ่มทีละ 1 เป็นจำนวนเต็มเสมอ
+                          stepSize: 1 // บังคับให้เพิ่มทีละ 1 
                         }
                       }
                     } 
