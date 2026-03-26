@@ -218,3 +218,19 @@ body, html {
   color: #8E1523;
   text-decoration: underline;
 }
+/* ========================================= */
+/* DatePicker Custom Styles */
+/* ========================================= */
+.custom-date-picker {
+  border: none;
+  background: transparent;
+  outline: none;
+  cursor: pointer;
+  font-size: 14px;
+  color: #333;
+  width: 200px; /* ขยายความกว้างเผื่อวันที่ 2 วัน */
+}
+
+.custom-date-picker::placeholder {
+  color: #999;
+}
