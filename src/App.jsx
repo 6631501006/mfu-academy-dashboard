@@ -94,18 +94,28 @@ function App() {
   const handleLoginSubmit = async (e) => {
     e.preventDefault();
     setLoginError('');
+
     try {
       const response = await fetch('https://auth-mlii.mfu.ac.th/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ username: username, password: password }) 
       });
+
       const data = await response.json();
+
       if (response.ok && data.accessToken) {
         localStorage.setItem('mfuAdminToken', data.accessToken);
-        const fakeUser = { firstname: 'Admin', lastname: username, role: 'Administrator' };
-        alert(`Login Success! Welcome ${username}`);
-        setLoggedInUser(fakeUser);
+        
+        // 👇 ดึง firstname และ lastname จาก API โดยตรงเลย (ตามที่เห็นใน Postman)
+        const realUser = { 
+          firstname: data.firstname || 'Admin', 
+          lastname: data.lastname || 'User', 
+          role: data.role || 'Administrator' // เผื่ออนาคต API ส่ง role มาให้ด้วย
+        };
+
+        alert(`Login Success! Welcome ${realUser.firstname}`);
+        setLoggedInUser(realUser);
         setView('admin'); 
         setUsername('');
         setPassword('');
@@ -113,6 +123,7 @@ function App() {
         setLoginError(data.message || "Invalid Username or Password"); 
       }
     } catch (err) {
+      console.error("Login Error:", err);
       setLoginError("Failed to connect to MFU Authentication Server.");
     }
   };
@@ -228,7 +239,7 @@ function App() {
 
               <div style={{ height: '350px', overflowY: displayLimit === 'all' ? 'auto' : 'hidden', paddingRight: '10px' }}> 
                 <div style={{ height: displayLimit === 'all' ? `${Math.max(350, topCourses.length * 40)}px` : '100%', position: 'relative' }}>
-                  <BarChart 
+                <BarChart 
                     data={{
                       labels: topCourses.map(item => item.name),
                       datasets: [{ label: 'Enrollments', data: topCourses.map(item => item.value), backgroundColor: '#8E1523', borderRadius: 4 }]
@@ -236,8 +247,25 @@ function App() {
                     options={{ 
                       indexAxis: 'y', 
                       maintainAspectRatio: false, 
-                      plugins: { legend: { display: false } },
-                      scales: { x: { ticks: { stepSize: 1 } } } 
+                      plugins: { 
+                        legend: { display: false },
+                        tooltip: { callbacks: { label: (ctx) => `${ctx.raw} Learners` } }
+                      },
+                      scales: { 
+                        x: { 
+                          ticks: { 
+                            stepSize: 1 // ลบ callback ตรงนี้ออก
+                          },
+                          // 👇 เพิ่ม title แกน X ให้ดันไปอยู่ขวาสุด
+                          title: {
+                            display: true,
+                            text: 'Learners',
+                            align: 'center', 
+                            color: '#666',
+                            font: { size: 12, weight: 'bold' }
+                          }
+                        } 
+                      } 
                     }} 
                   />
                 </div>
