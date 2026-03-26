@@ -38,30 +38,52 @@ function App() {
     }
   }, [selectedCat, view]);
 
+  // 👇 3. ฟังก์ชันจัดการการ Login (เวอร์ชั่นเชื่อม API มหาวิทยาลัย)
   const handleLoginSubmit = async (e) => {
     e.preventDefault();
     setLoginError('');
 
     try {
-      const response = await fetch('http://localhost:5001/api/login', {
+      // 1. ยิง POST ไปที่ Auth API ของพี่เขา 
+      const response = await fetch('https://auth-mlii.mfu.ac.th/auth/login', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username: username, password: password }) 
+        headers: { 
+          'Content-Type': 'application/json' 
+        },
+        body: JSON.stringify({ 
+          username: username, 
+          password: password 
+        }) 
       });
 
       const data = await response.json();
 
-      if (response.ok && data.success) {
-        // 2.เก็บข้อมูล User เข้า State 
-        setLoggedInUser(data.user);
+      // เช็คว่าได้ Token กลับมาไหม (API จริงจะส่ง accessToken กลับมา)
+      if (response.ok && data.accessToken) {
+        
+        // 2. แอบเก็บ Token (กุญแจ) ลงในกระเป๋าของ Browser (localStorage)
+        // เพื่อให้หน้า AdminDashboard หยิบไปใช้ต่อได้
+        localStorage.setItem('mfuAdminToken', data.accessToken);
+        
+        // 3. กำหนดข้อมูลจำลองของแอดมิน (เพราะ API นี้ส่งมาแค่ Token)
+        const fakeUser = {
+          firstname: 'Admin',
+          lastname: username,
+          role: 'Administrator'
+        };
+
+        alert(`Login Success! Welcome ${username}`);
+        setLoggedInUser(fakeUser);
         setView('admin'); 
         setUsername('');
         setPassword('');
       } else {
-        setLoginError(data.message || "Login failed"); 
+        // กรณีรหัสผิด หรือเซิร์ฟเวอร์ตอบกลับมาเป็น error
+        setLoginError(data.message || "Invalid Username or Password"); 
       }
     } catch (err) {
-      setLoginError("Failed to connect to the server.");
+      console.error("Login Error:", err);
+      setLoginError("Failed to connect to MFU Authentication Server.");
     }
   };
 
