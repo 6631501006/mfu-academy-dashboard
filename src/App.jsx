@@ -21,6 +21,8 @@ function App() {
   const [dateRange, setDateRange] = useState([null, null]);
   const [startDate, endDate] = dateRange; 
   const [displayLimit, setDisplayLimit] = useState('5');
+  // เพิ่มชุดสีให้เหมือนฝั่ง Admin
+  const categoryColors = ['#8E1523', '#D4A038', '#C42026', '#E06D53', '#E8907E', '#4C5A73'];
 
   const [username, setUsername] = useState(''); 
   const [password, setPassword] = useState('');
@@ -285,14 +287,34 @@ function App() {
   
             <div className="chart-card" style={{ flex: 1 }}>
               <h3 style={{ margin: '0 0 20px 0', color: '#333' }}>Course Categories</h3>
-              <div style={{ position: 'relative', height: '300px', width: '100%', display: 'flex', justifyContent: 'center' }}>
-                <DoughnutChart 
-                  data={{
-                    labels: catDist.map(item => item.label), 
-                    datasets: [{ data: catDist.map(item => item.value), backgroundColor: ['#8E1523', '#BD9946', '#D9D9D9', '#333333'], borderWidth: 0, hoverOffset: 4 }]
-                  }} 
-                  options={{ cutout: '75%', plugins: { legend: { position: 'bottom' } }, maintainAspectRatio: false }}
-                />
+              <div className="doughnut-chart-content">
+                <div className="doughnut-wrapper" style={{ height: '220px', position: 'relative' }}>
+                  <DoughnutChart 
+                    data={{
+                      labels: catDist.map(item => item.label), 
+                      datasets: [{ data: catDist.map(item => item.value), backgroundColor: categoryColors, borderWidth: 0, hoverOffset: 5 }]
+                    }} 
+                    options={{ 
+                      cutout: '65%', 
+                      maintainAspectRatio: false,
+                      plugins: { 
+                        legend: { display: false },
+                        tooltip: { callbacks: { label: (ctx) => `${ctx.raw} Courses` } }
+                      } 
+                    }}
+                  />
+                </div>
+                <div className="custom-legend-bottom" style={{ marginTop: '20px' }}>
+                  {catDist.map((item, index) => (
+                    <div key={index} className="legend-item-horizontal" style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', fontSize: '13px' }}>
+                      <div className="legend-label" style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#555' }}>
+                        <span className="legend-dot" style={{ width: '12px', height: '12px', borderRadius: '50%', backgroundColor: categoryColors[index % categoryColors.length] }}></span>
+                        <span className="legend-text">{item.label}</span>
+                      </div>
+                      <div className="legend-value" style={{ fontWeight: '600', color: '#333' }}>{item.value.toLocaleString()} Courses</div>
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
           </div>
