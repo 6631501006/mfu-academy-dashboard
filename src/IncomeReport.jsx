@@ -1,70 +1,189 @@
 import React, { useState, useEffect } from 'react';
 import { CSVLink } from "react-csv";
+import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, Tooltip, Legend } from 'chart.js';
+import { Bar } from 'react-chartjs-2';
+
+ChartJS.register(CategoryScale, LinearScale, BarElement, Tooltip, Legend);
 
 function IncomeReport() {
   const [categories, setCategories] = useState([]);
   const [selectedYear, setSelectedYear] = useState('all');
   const [selectedCat, setSelectedCat] = useState('all');
   
+  // 👇 เพิ่ม State สำหรับ Filter ของ Chart
+  const [chartLimit, setChartLimit] = useState('10');
+  
   const [totalRevenue, setTotalRevenue] = useState(0);
+  const [totalAvailableCourses, setTotalAvailableCourses] = useState(0); // 👈 State การ์ดคอร์สที่มีทั้งหมด
+  const [totalCoursesSold, setTotalCoursesSold] = useState(0); 
+  
   const [reportData, setReportData] = useState([]);
   const [breakdownData, setBreakdownData] = useState([]);
   const [recentTransactions, setRecentTransactions] = useState([]);
 
-  // 👇 1. State สำหรับระบบแบ่งหน้า (Pagination)
+  const [rawCourses, setRawCourses] = useState([]);
+  const [rawIncome, setRawIncome] = useState([]);
+
   const [breakdownPage, setBreakdownPage] = useState(1);
   const [transactionPage, setTransactionPage] = useState(1);
-  const itemsPerPage = 10; // กำหนดให้แสดงหน้าละ 10 รายการ
+  const itemsPerPage = 10; 
 
   useEffect(() => {
-    fetch('http://localhost:5001/api/categories')
-      .then(res => res.json()).then(data => setCategories(data)).catch(err => console.error(err));
+    const fetchInitialData = async () => {
+      try {
+        const courseRes = await fetch('https://api-academy-payment.mfu.ac.th/dashboard-data/all-course');
+        const courses = await courseRes.json();
+        setRawCourses(courses);
+
+        const cats = [];
+        const catMap = new Set();
+        courses.forEach(c => {
+          if (c.category && !catMap.has(c.category.id)) {
+            catMap.add(c.category.id);
+            cats.push({ id: c.category.id, name: c.category.categoryName });
+          }
+        });
+        setCategories(cats);
+
+        const token = localStorage.getItem('mfuAdminToken');
+        if (token) {
+          const incomeRes = await fetch('https://api-academy-payment.mfu.ac.th/dashboard-data/income-report', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }
+          });
+          const incomeData = await incomeRes.json();
+          setRawIncome(Array.isArray(incomeData) ? incomeData : []);
+        }
+      } catch (err) {
+        console.error("Error fetching data:", err);
+      }
+    };
+    fetchInitialData();
   }, []);
 
   useEffect(() => {
-    // รีเซ็ตกลับไปหน้า 1 ทุกครั้งที่มีการเปลี่ยน Filter
+    if (rawCourses.length === 0 || rawIncome.length === 0) return;
+
     setBreakdownPage(1);
     setTransactionPage(1);
 
-    fetch(`http://localhost:5001/api/income-total?year=${selectedYear}&catId=${selectedCat}`)
-      .then(res => res.json()).then(data => setTotalRevenue(data.totalRevenue)).catch(err => console.error(err));
+    // 👇 นับจำนวน "คอร์สทั้งหมด" ตาม Filter
+    let filteredCourses = rawCourses;
+    if (selectedCat !== 'all') {
+      filteredCourses = rawCourses.filter(c => c.category?.id === parseInt(selectedCat) || c.categoryId === parseInt(selectedCat));
+    }
+    setTotalAvailableCourses(filteredCourses.length);
 
-    fetch(`http://localhost:5001/api/income-breakdown?year=${selectedYear}&catId=${selectedCat}`)
-      .then(res => res.json()).then(data => setBreakdownData(data)).catch(err => console.error(err));
+    let tRevenue = 0;
+    let tCoursesSold = 0;
+    let breakdownMap = {};
+    let transactions = [];
+    let csvExp = [];
 
-    fetch(`http://localhost:5001/api/income-export?year=${selectedYear}&catId=${selectedCat}`)
-      .then(res => res.json()).then(data => setReportData(data)).catch(err => console.error(err));
+    rawIncome.forEach(item => {
+      const dateStr = item.orderDateTime || item.createdAt;
+      if (!dateStr) return;
+      const date = new Date(dateStr);
+      
+      if (selectedYear !== 'all' && date.getFullYear().toString() !== selectedYear) return;
 
-    fetch(`http://localhost:5001/api/recent-transactions?year=${selectedYear}&catId=${selectedCat}`)
-      .then(res => res.json()).then(data => setRecentTransactions(data)).catch(err => console.error(err));
-  }, [selectedYear, selectedCat]);
+      const courseId = item.courseId;
+      const matchedCourse = rawCourses.find(c => c.id === courseId);
+      
+      if (selectedCat !== 'all') {
+        const catId = matchedCourse?.category?.id || matchedCourse?.categoryId;
+        if (catId !== parseInt(selectedCat)) return;
+      }
 
-  // คำนวณยอดรวมทั้งหมดของตาราง Breakdown
-  const totalTableLearners = breakdownData.reduce((sum, item) => sum + Number(item.totalLearners), 0);
-  const totalTableRevenue = breakdownData.reduce((sum, item) => sum + Number(item.totalRevenue), 0);
+      const price = Number(item.amount || item.detailSumTotal || 0);
+      const courseName = matchedCourse ? matchedCourse.courseName : `Course ID: ${courseId}`;
+      const catName = matchedCourse?.category?.categoryName || 'Other';
+      const learnerName = `${item.customerFirstname || item.userFirstname || ''} ${item.customerLastname || item.userLastname || ''}`.trim() || 'Unknown Learner';
 
-  // ฟังก์ชันแปลงวันที่
-  const formatDate = (dateString) => {
-    if (!dateString) return '-';
-    const date = new Date(dateString);
-    const day = String(date.getDate()).padStart(2, '0');
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const year = date.getFullYear();
+      tRevenue += price;
+      
+      if (!breakdownMap[courseName]) {
+        breakdownMap[courseName] = { count: 0, total: 0, pricePerUnit: price };
+        tCoursesSold++; 
+      }
+      breakdownMap[courseName].count += 1;
+      breakdownMap[courseName].total += price;
+
+      transactions.push({
+        transactionId: item.orderNo || item.id,
+        orderDate: date, 
+        learnerName: learnerName,
+        coursePurchased: courseName,
+        amount: price
+      });
+
+      // ยัดลง CSV (ไม่มีข้อมูล Total Courses ที่เพิ่งเพิ่มมา)
+      csvExp.push({
+        "Order No.": item.orderNo || "-",
+        "Learner Name": learnerName,
+        "Course Name": courseName,
+        "Category": catName,
+        "Price (THB)": price,
+        "Date": date.toLocaleDateString('th-TH'),
+        "Time": date.toLocaleTimeString('th-TH')
+      });
+    });
+
+    const bData = Object.entries(breakdownMap).map(([name, data]) => ({
+      courseName: name,
+      pricePerUnit: data.pricePerUnit,
+      totalLearners: data.count,
+      totalRevenue: data.total
+    })).sort((a, b) => b.totalRevenue - a.totalRevenue); 
+
+    transactions.sort((a, b) => b.orderDate - a.orderDate);
+
+    setTotalRevenue(tRevenue);
+    setTotalCoursesSold(tCoursesSold);
+    setBreakdownData(bData);
+    setRecentTransactions(transactions);
+    setReportData(csvExp);
+
+  }, [selectedYear, selectedCat, rawCourses, rawIncome]);
+
+  const totalTableLearners = breakdownData.reduce((sum, item) => sum + item.totalLearners, 0);
+  const totalTableRevenue = breakdownData.reduce((sum, item) => sum + item.totalRevenue, 0);
+
+  const formatDate = (dateObj) => {
+    if (!dateObj) return '-';
+    const day = String(dateObj.getDate()).padStart(2, '0');
+    const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+    const year = dateObj.getFullYear();
     return `${day}/${month}/${year}`;
   };
 
-  // 👇 2. Logic สำหรับแบ่งหน้าตาราง Breakdown
   const totalBreakdownPages = Math.ceil(breakdownData.length / itemsPerPage);
   const currentBreakdownData = breakdownData.slice((breakdownPage - 1) * itemsPerPage, breakdownPage * itemsPerPage);
 
-  // 👇 3. Logic สำหรับแบ่งหน้าตาราง Transactions
   const totalTransactionPages = Math.ceil(recentTransactions.length / itemsPerPage);
   const currentTransactionData = recentTransactions.slice((transactionPage - 1) * itemsPerPage, transactionPage * itemsPerPage);
+
+  // 👇 จัดการข้อมูลกราฟให้สัมพันธ์กับ Filter (Top 10 / All)
+  const displayedChartData = chartLimit === 'all' ? breakdownData : breakdownData.slice(0, 10);
+  
+  // คำนวณความสูงของกล่องกราฟ ถ้ายาวมากให้ยืดออกเพื่อไม่ให้แท่งเบียดกัน
+  const dynamicChartHeight = chartLimit === 'all' ? Math.max(350, displayedChartData.length * 35) : 350;
+
+  const chartData = {
+    labels: displayedChartData.map(d => d.courseName.length > 30 ? d.courseName.substring(0, 30) + '...' : d.courseName),
+    datasets: [
+      {
+        label: 'Revenue (THB)',
+        data: displayedChartData.map(d => d.totalRevenue),
+        backgroundColor: '#D4A038',
+        borderRadius: 4
+      }
+    ]
+  };
 
   return (
     <div className="income-page">
       
-      {/* --- แถบ Filter ด้านบน --- */}
       <div className="income-filter-bar">
         <div className="income-filters-left">
           <div className="filter-item">
@@ -87,7 +206,7 @@ function IncomeReport() {
               <select value={selectedCat} onChange={(e) => setSelectedCat(e.target.value)} className="income-select">
                 <option value="all">All Courses</option>
                 {categories.map(cat => (
-                  <option key={cat.id} value={cat.id}>{cat.category_name}</option>
+                  <option key={cat.id} value={cat.id}>{cat.name}</option>
                 ))}
               </select>
             </div>
@@ -99,16 +218,81 @@ function IncomeReport() {
         </CSVLink>
       </div>
 
-      {/* --- การ์ดแสดงรายได้รวม --- */}
-      <div className="income-revenue-card" style={{ marginBottom: '24px' }}>
-        <div className="revenue-card-header">
-          <span className="revenue-icon">$</span><h2>Total Gross Revenue</h2>
+      {/* --- 👇 ปรับ Grid การ์ด ให้มี 3 ใบ ขนาดสมดุลกัน --- */}
+      <div className="analytics-cards-grid" style={{ marginBottom: '24px', display: 'flex', gap: '16px' }}>
+        <div className="income-revenue-card" style={{ flex: 1, margin: 0 }}>
+          <div className="revenue-card-header">
+            <span className="revenue-icon">$</span><h2 style={{fontSize: '16px'}}>Total Gross Revenue</h2>
+          </div>
+          <h1 className="revenue-amount">฿{totalRevenue.toLocaleString()}</h1>
+          <p className="revenue-subtext">Filtered by {selectedYear === 'all' ? 'All Years' : `Year ${selectedYear}`}</p>
         </div>
-        <h1 className="revenue-amount">฿{Number(totalRevenue).toLocaleString()}</h1>
-        <p className="revenue-subtext">Showing data for {selectedYear === 'all' ? 'All Years' : `Year ${selectedYear}`} {selectedCat !== 'all' ? ` • Filtered by Category` : ' • All Courses'}</p>
+
+        {/* 🌟 เพิ่มการ์ด Total Courses */}
+        <div className="income-revenue-card" style={{ flex: 1, margin: 0, backgroundColor: '#f0f4f8', border: '1px solid #d9e2ec' }}>
+          <div className="revenue-card-header">
+            <span className="revenue-icon" style={{ backgroundColor: '#334E68' }}>📚</span><h2 style={{ color: '#334E68', fontSize: '16px' }}>Total Courses</h2>
+          </div>
+          <h1 className="revenue-amount" style={{ color: '#102A43' }}>{totalAvailableCourses}</h1>
+          <p className="revenue-subtext">Courses available in selected category</p>
+        </div>
+
+        <div className="income-revenue-card" style={{ flex: 1, margin: 0, backgroundColor: '#fcf8f2', border: '1px solid #f2e3c6' }}>
+          <div className="revenue-card-header">
+            <span className="revenue-icon" style={{ backgroundColor: '#D4A038' }}>📖</span><h2 style={{ color: '#D4A038', fontSize: '16px' }}>Courses Sold</h2>
+          </div>
+          <h1 className="revenue-amount" style={{ color: '#8E1523' }}>{totalCoursesSold}</h1>
+          <p className="revenue-subtext">Unique courses generating income</p>
+        </div>
       </div>
 
-      {/* --- ตารางที่ 1: Detailed Revenue Breakdown --- */}
+      {/* --- 👇 อัปเดตกราฟแท่ง ให้มีปุ่ม Filter Top 10 / All --- */}
+      <div className="admin-chart-container" style={{ marginBottom: '24px', background: '#fff', padding: '24px', borderRadius: '12px', border: '1px solid #eaeaea', boxShadow: '0 2px 10px rgba(0,0,0,0.02)' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+          <h3 style={{ margin: 0, color: '#333', fontSize: '18px', fontWeight: '500' }}>Revenue by Course</h3>
+          
+          <select 
+            value={chartLimit} 
+            onChange={(e) => setChartLimit(e.target.value)} 
+            style={{ padding: '6px 12px', borderRadius: '6px', border: '1px solid #ddd', outline: 'none', cursor: 'pointer', fontSize: '14px' }}
+          >
+            <option value="10">Top 10 Courses</option>
+            <option value="all">Show All Courses</option>
+          </select>
+        </div>
+
+        {/* 🌟 ถ้าเลือก All ให้มี Scroll Bar โผล่มาแทน เพื่อไม่ให้ Layout หน้าพัง */}
+        <div style={{ height: '350px', width: '100%', overflowY: chartLimit === 'all' ? 'auto' : 'hidden', paddingRight: chartLimit === 'all' ? '10px' : '0' }}>
+          <div style={{ height: `${dynamicChartHeight}px`, position: 'relative' }}>
+            {breakdownData.length > 0 ? (
+              <Bar 
+                data={chartData}
+                options={{
+                  indexAxis: 'y', 
+                  responsive: true,
+                  maintainAspectRatio: false,
+                  plugins: { 
+                    legend: { display: false },
+                    tooltip: { callbacks: { label: (ctx) => `฿${ctx.raw.toLocaleString()}` } }
+                  },
+                  scales: {
+                    x: { 
+                      beginAtZero: true, 
+                      ticks: { color: '#999', font: { size: 12 }, callback: (val) => '฿' + val.toLocaleString() }, 
+                      grid: { color: '#f0f0f0', borderDash: [5, 5] },
+                      title: { display: true, text: 'Total Revenue (THB)', align: 'end', color: '#D4A038', font: { size: 12, weight: 'bold' } }
+                    },
+                    y: { grid: { display: false }, ticks: { color: '#666', font: { size: 11, weight: '500' } } }
+                  }
+                }}
+              />
+            ) : (
+              <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#999' }}>No data available to display chart.</div>
+            )}
+          </div>
+        </div>
+      </div>
+
       <div className="income-breakdown-container">
         <h3 className="breakdown-title">Detailed Revenue Breakdown</h3>
         <div className="table-responsive">
@@ -126,16 +310,15 @@ function IncomeReport() {
                 currentBreakdownData.map((row, index) => (
                   <tr key={index}>
                     <td className="course-name-cell">{row.courseName}</td>
-                    <td className="text-right">฿{Number(row.pricePerUnit).toLocaleString()}</td>
-                    <td className="text-right">{Number(row.totalLearners).toLocaleString()}</td>
-                    <td className="text-right">฿{Number(row.totalRevenue).toLocaleString()}</td>
+                    <td className="text-right">฿{row.pricePerUnit.toLocaleString()}</td>
+                    <td className="text-right">{row.totalLearners.toLocaleString()}</td>
+                    <td className="text-right" style={{ fontWeight: '600', color: '#2b8a3e' }}>฿{row.totalRevenue.toLocaleString()}</td>
                   </tr>
                 ))
               ) : (
                 <tr><td colSpan="4" style={{ textAlign: 'center', padding: '30px', color: '#999' }}>No data available.</td></tr>
               )}
             </tbody>
-            {/* แถว Total โชว์ผลรวมทั้งหมด (ไม่สนหน้า) */}
             {breakdownData.length > 0 && (
               <tfoot>
                 <tr className="table-total-row">
@@ -149,29 +332,15 @@ function IncomeReport() {
           </table>
         </div>
 
-        {/* 👇 ส่วนควบคุมการเปลี่ยนหน้า ตารางที่ 1 👇 */}
         {totalBreakdownPages > 1 && (
           <div className="pagination-container">
-            <button 
-              className="pagination-btn" 
-              onClick={() => setBreakdownPage(prev => Math.max(1, prev - 1))} 
-              disabled={breakdownPage === 1}
-            >
-              &larr; Prev
-            </button>
+            <button className="pagination-btn" onClick={() => setBreakdownPage(prev => Math.max(1, prev - 1))} disabled={breakdownPage === 1}>&larr; Prev</button>
             <span className="pagination-text">Page {breakdownPage} of {totalBreakdownPages}</span>
-            <button 
-              className="pagination-btn" 
-              onClick={() => setBreakdownPage(prev => Math.min(totalBreakdownPages, prev + 1))} 
-              disabled={breakdownPage === totalBreakdownPages}
-            >
-              Next &rarr;
-            </button>
+            <button className="pagination-btn" onClick={() => setBreakdownPage(prev => Math.min(totalBreakdownPages, prev + 1))} disabled={breakdownPage === totalBreakdownPages}>Next &rarr;</button>
           </div>
         )}
       </div>
 
-      {/* --- ตารางที่ 2: Recent Transactions --- */}
       <div className="income-breakdown-container" style={{ marginTop: '24px' }}>
         <h3 className="breakdown-title">Recent Transactions</h3>
         <div className="table-responsive">
@@ -193,7 +362,7 @@ function IncomeReport() {
                     <td>{formatDate(tx.orderDate)}</td>
                     <td style={{ color: '#333', fontWeight: '500' }}>{tx.learnerName}</td>
                     <td>{tx.coursePurchased || '-'}</td>
-                    <td className="text-right" style={{ color: '#333' }}>฿{Number(tx.amount).toLocaleString()}</td>
+                    <td className="text-right" style={{ color: '#333' }}>฿{tx.amount.toLocaleString()}</td>
                   </tr>
                 ))
               ) : (
@@ -203,24 +372,11 @@ function IncomeReport() {
           </table>
         </div>
 
-        {/* 👇 ส่วนควบคุมการเปลี่ยนหน้า ตารางที่ 2 👇 */}
         {totalTransactionPages > 1 && (
           <div className="pagination-container">
-            <button 
-              className="pagination-btn" 
-              onClick={() => setTransactionPage(prev => Math.max(1, prev - 1))} 
-              disabled={transactionPage === 1}
-            >
-              &larr; Prev
-            </button>
+            <button className="pagination-btn" onClick={() => setTransactionPage(prev => Math.max(1, prev - 1))} disabled={transactionPage === 1}>&larr; Prev</button>
             <span className="pagination-text">Page {transactionPage} of {totalTransactionPages}</span>
-            <button 
-              className="pagination-btn" 
-              onClick={() => setTransactionPage(prev => Math.min(totalTransactionPages, prev + 1))} 
-              disabled={transactionPage === totalTransactionPages}
-            >
-              Next &rarr;
-            </button>
+            <button className="pagination-btn" onClick={() => setTransactionPage(prev => Math.min(totalTransactionPages, prev + 1))} disabled={transactionPage === totalTransactionPages}>Next &rarr;</button>
           </div>
         )}
       </div>
