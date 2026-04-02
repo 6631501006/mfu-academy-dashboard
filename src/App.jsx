@@ -3,7 +3,6 @@ import './App.css';
 import { Chart as ChartJS, ArcElement, Tooltip, Legend, CategoryScale, LinearScale, BarElement, PointElement, LineElement } from 'chart.js';
 import { Doughnut as DoughnutChart, Bar as BarChart } from 'react-chartjs-2'; 
 
-// 👇 1. Import ปฏิทินและสไตล์ของมันเข้ามา
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 
@@ -18,10 +17,9 @@ function App() {
   const [topCourses, setTopCourses] = useState([]);
   const [catDist, setCatDist] = useState([]);
   
-  // 👇 2. เปลี่ยน State ให้รับค่าเป็นช่วงวันที่ (Array) แทน
   const [selectedCat, setSelectedCat] = useState('all');
   const [dateRange, setDateRange] = useState([null, null]);
-  const [startDate, endDate] = dateRange; // แยกค่าเริ่มต้นและสิ้นสุดออกมาใช้งาน
+  const [startDate, endDate] = dateRange; 
   const [displayLimit, setDisplayLimit] = useState('5');
 
   const [username, setUsername] = useState(''); 
@@ -31,9 +29,28 @@ function App() {
 
   const fetchData = async () => {
     try {
-      const response = await fetch('https://api-academy-payment.mfu.ac.th/dashboard-data/all-course');
-      const allCourses = await response.json();
+      // 1. ดึงข้อมูลคอร์สทั้งหมด (เพื่อนำไปทำกราฟและนับจำนวนคอร์ส)
+      const courseResponse = await fetch('https://api-academy-payment.mfu.ac.th/dashboard-data/all-course');
+      const allCourses = await courseResponse.json();
 
+      // 👇 2. ดึงข้อมูลรายชื่อนักเรียนจาก API ใหม่ ที่พี่ Backend ทำให้
+      const userResponse = await fetch('https://api-academy-payment.mfu.ac.th/dashboard-data/total-users');
+      const allUsers = await userResponse.json();
+
+      // 👇 3. คำนวณจำนวน "นักเรียนจริงๆ" โดยกรองตามวันที่สมัครสมาชิก (createdAt)
+      let validUsers = allUsers;
+      if (startDate || endDate) {
+        validUsers = allUsers.filter(user => {
+          const joinedDate = new Date(user.createdAt); 
+          const start = startDate ? new Date(startDate) : new Date('2000-01-01');
+          const end = endDate ? new Date(endDate) : new Date('2100-01-01');
+          end.setHours(23, 59, 59, 999); 
+          return joinedDate >= start && joinedDate <= end;
+        });
+      }
+      const totalUniqueLearners = validUsers.length;
+
+      // 4. กรองจำนวนคอร์สตาม Category (เพื่อแสดงในการ์ด Total Courses และกราฟ)
       let filteredCourses = allCourses;
       if (selectedCat !== 'all') {
         filteredCourses = allCourses.filter(course => 
@@ -42,14 +59,13 @@ function App() {
         );
       }
 
-      let totalLearnersCount = 0;
       let chartBarData = [];
       let categoryCounts = {};
 
       filteredCourses.forEach(course => {
         let validOrders = course.orderDetail || [];
 
-        // 👇 3. ระบบกรองวันที่ (รองรับ Date Object จากปฏิทินใหม่)
+        // ระบบกรองวันที่ (สำหรับยอดบนกราฟแท่ง)
         if (startDate || endDate) {
           validOrders = validOrders.filter(order => {
             const orderDate = new Date(order.createdAt); 
@@ -60,8 +76,6 @@ function App() {
             return orderDate >= start && orderDate <= end;
           });
         }
-
-        totalLearnersCount += validOrders.length;
 
         if (validOrders.length > 0 || (!startDate && !endDate)) {
           chartBarData.push({ name: course.courseName, value: validOrders.length });
@@ -78,7 +92,8 @@ function App() {
 
       const formattedCatDist = Object.keys(categoryCounts).map(key => ({ label: key, value: categoryCounts[key] }));
 
-      setStats({ totalLearners: totalLearnersCount, totalCourses: filteredCourses.length });
+      // 👇 5. อัปเดตข้อมูลขึ้นหน้าจอ (เปลี่ยนไปใช้ตัวเลขจากการนับ User ล้วนๆ)
+      setStats({ totalLearners: totalUniqueLearners, totalCourses: filteredCourses.length });
       setTopCourses(chartBarData);
       setCatDist(formattedCatDist);
 
@@ -107,11 +122,10 @@ function App() {
       if (response.ok && data.accessToken) {
         localStorage.setItem('mfuAdminToken', data.accessToken);
         
-        // 👇 ดึง firstname และ lastname จาก API โดยตรงเลย (ตามที่เห็นใน Postman)
         const realUser = { 
           firstname: data.firstname || 'Admin', 
           lastname: data.lastname || 'User', 
-          role: data.role || 'Administrator' // เผื่ออนาคต API ส่ง role มาให้ด้วย
+          role: data.role || 'Administrator' 
         };
 
         alert(`Login Success! Welcome ${realUser.firstname}`);
@@ -180,7 +194,6 @@ function App() {
             
             <div style={{ display: 'flex', alignItems: 'center', gap: '15px', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
               
-              {/* 👇 4. ปฏิทิน Range Picker แบบไม่มี วว/ดด/ปปปป กวนใจ */}
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: '#fff', padding: '8px 16px', borderRadius: '8px', border: '1px solid #ddd' }}>
                 <span style={{ fontSize: '14px', color: '#555' }}>📅 Date:</span>
                 <DatePicker
@@ -203,7 +216,6 @@ function App() {
               </select>
               
               <button 
-                // 👇 อัปเดต Reset ให้เคลียร์ค่าปฏิทินด้วย
                 onClick={() => { setSelectedCat('all'); setDateRange([null, null]); setDisplayLimit('5'); }} 
                 style={{ padding: '10px 20px', borderRadius: '8px', border: '1px solid #ddd', background: '#fff', cursor: 'pointer' }}
               >
@@ -254,9 +266,8 @@ function App() {
                       scales: { 
                         x: { 
                           ticks: { 
-                            stepSize: 1 // ลบ callback ตรงนี้ออก
+                            stepSize: 1 
                           },
-                          // 👇 เพิ่ม title แกน X ให้ดันไปอยู่ขวาสุด
                           title: {
                             display: true,
                             text: 'Learners',
