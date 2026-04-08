@@ -6,23 +6,24 @@ import { Line, Bar } from 'react-chartjs-2';
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, BarElement, Tooltip, Legend);
 
 function AnalyticsReports() {
-  const [categories, setCategories] = useState([]);
-  const [selectedCat, setSelectedCat] = useState('all');
+  const [selectedCourse, setSelectedCourse] = useState('all');
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear().toString());
   
-  const [monthlyChartData, setMonthlyChartData] = useState(new Array(12).fill(0));
-  const [analyticsStats, setAnalyticsStats] = useState({ totalLearners: 0, successfulEnrollments: 0 });
+  // 👇 State สำหรับกราฟ 2 เส้น
+  const [monthlyLearnersChart, setMonthlyLearnersChart] = useState(new Array(12).fill(0));
+  const [monthlyPurchasedChart, setMonthlyPurchasedChart] = useState(new Array(12).fill(0));
+  
+  const [analyticsStats, setAnalyticsStats] = useState({ totalLearners: 0, purchasedCourses: 0 }); 
   const [reportData, setReportData] = useState([]);
 
-  // State สำหรับเก็บข้อมูลดิบ
   const [rawCourses, setRawCourses] = useState([]);
-  const [rawUsers, setRawUsers] = useState([]);
+  const [rawUsers, setRawUsers] = useState([]); 
   const [rawIncome, setRawIncome] = useState([]); 
 
   const [monthlyIncomeData, setMonthlyIncomeData] = useState(new Array(12).fill(0));
   const [monthlyIncomeDetails, setMonthlyIncomeDetails] = useState(Array.from({ length: 12 }, () => ({})));
 
-  // 1. ดึงข้อมูล Public (คอร์สและผู้ใช้) 
+  // 1. ดึงข้อมูล Public (คอร์ส และ ผู้ใช้)
   useEffect(() => {
     const fetchPublicData = async () => {
       try {
@@ -33,17 +34,7 @@ function AnalyticsReports() {
         const users = await userRes.json();
 
         setRawCourses(courses);
-        setRawUsers(users);
-
-        const cats = [];
-        const catMap = new Set();
-        courses.forEach(c => {
-          if (c.category && !catMap.has(c.category.id)) {
-            catMap.add(c.category.id);
-            cats.push({ id: c.category.id, name: c.category.categoryName });
-          }
-        });
-        setCategories(cats);
+        setRawUsers(users); 
       } catch (error) {
         console.error("Error fetching Public Data:", error);
       }
@@ -51,7 +42,7 @@ function AnalyticsReports() {
     fetchPublicData();
   }, []);
 
-  // 👇 2. ดึงข้อมูลรายได้ (Income) -> แก้ให้ดึงแค่ครั้งเดียว และดึงมา "ทั้งหมดทุกปี"
+  // 2. ดึงข้อมูลรายได้
   useEffect(() => {
     const fetchIncomeData = async () => {
       const token = localStorage.getItem('mfuAdminToken');
@@ -59,11 +50,7 @@ function AnalyticsReports() {
         try {
           const incomeRes = await fetch('https://api-academy-payment.mfu.ac.th/dashboard-data/income-report', {
             method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${token}`
-            }
-            // 💥 เอา body ที่ส่ง year ออกไป เพื่อให้ API คายข้อมูลทั้งหมดมาให้เรา
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }
           });
           const incomeData = await incomeRes.json();
           setRawIncome(Array.isArray(incomeData) ? incomeData : []);
@@ -73,76 +60,77 @@ function AnalyticsReports() {
       }
     };
     fetchIncomeData();
-  }, []); // 💥 เอา selectedYear ออกจากวงเล็บนี้ เพื่อไม่ให้มันยิง API พร่ำเพรื่อ
+  }, []); 
 
- // 3. ประมวลผลและคำนวณข้อมูลทั้งหมด
- useEffect(() => {
-  if (rawCourses.length === 0) return;
+// 3. ประมวลผลและคำนวณข้อมูลทั้งหมด
+useEffect(() => {
+  if (rawCourses.length === 0 || rawUsers.length === 0) return;
 
-  let enrollmentsCount = 0;
-  let mData = new Array(12).fill(0); 
+  // --- ส่วนที่ 1: จัดการข้อมูล Learners (จาก /total-users) ---
+  let totalLearnersCount = 0;
+  let mLearners = new Array(12).fill(0); 
 
-  // --- ส่วนที่ 1: กราฟจำนวนคนลงทะเบียน (จาก all-course) ---
-  let filteredCourses = rawCourses;
-  if (selectedCat !== 'all') {
-    filteredCourses = rawCourses.filter(c => c.category?.id === parseInt(selectedCat) || c.categoryId === parseInt(selectedCat));
-  }
+  rawUsers.forEach(user => {
+    if (!user.createdAt) return;
+    const joinDate = new Date(user.createdAt);
+    const joinYear = joinDate.getFullYear().toString();
 
-  filteredCourses.forEach(course => {
-    const orders = course.orderDetail || [];
-    enrollmentsCount += orders.length; 
-    orders.forEach(order => {
-      const date = new Date(order.createdAt);
-      if (date.getFullYear().toString() === selectedYear) {
-        mData[date.getMonth()] += 1;
-      }
-    });
+    // 🎯 นับจำนวนทั้งหมดแบบไม่ต้องสนใจปี (จะได้โชว์ 141 ตลอด)
+    totalLearnersCount++;
+
+    // ส่วนของกราฟ: ให้แสดงเฉพาะเดือนในปีที่เลือกเท่านั้น
+    if (joinYear === selectedYear) {
+      mLearners[joinDate.getMonth()] += 1;
+    }
   });
 
-  // --- ส่วนที่ 2: กราฟรายได้ และ Export CSV (จาก income-report โดยตรง) ---
+  // --- ส่วนที่ 2: จัดการข้อมูล Purchased (จาก /income-report) ---
+  let purchasedCount = 0;
+  let mPurchased = new Array(12).fill(0); 
   let mIncome = new Array(12).fill(0); 
   let mIncomeDetails = Array.from({ length: 12 }, () => ({})); 
   let csvData = []; 
 
   rawIncome.forEach(item => {
-    // 👇 สลับเอา createdAt ขึ้นก่อน เพราะมันเก็บเวลาแม่นยำกว่า orderDateTime ที่มักจะตัดเป็นเที่ยงคืน
     const dateStr = item.createdAt || item.orderDateTime;
     if (!dateStr) return;
 
     const date = new Date(dateStr);
-    
+    const orderYear = date.getFullYear().toString();
     const price = Number(item.amount || item.detailSumTotal || 0); 
     const finalCourseName = item.courseName || `Course ID: ${item.courseId}`;
 
     const matchedCourse = rawCourses.find(c => c.id === item.courseId);
     const categoryName = matchedCourse?.category?.categoryName || 'Other';
 
-    if (selectedCat !== 'all') {
-      const catId = matchedCourse?.category?.id || matchedCourse?.categoryId;
-      if (catId !== parseInt(selectedCat)) return; 
+    // Filter คอร์ส (มีผลทั้ง CSV และ การ์ด Purchased)
+    if (selectedCourse !== 'all') {
+      if (item.courseId !== parseInt(selectedCourse)) return; 
     }
 
-    // 👇 ประกอบร่างเวลาเอง (HH:mm:ss) เพื่อบังคับให้ Excel แสดงผลแบบข้อความ ไม่ให้มันซ่อน
     const hours = String(date.getHours()).padStart(2, '0');
     const minutes = String(date.getMinutes()).padStart(2, '0');
     const seconds = String(date.getSeconds()).padStart(2, '0');
     const formattedTime = `${hours}:${minutes}:${seconds}`;
 
-    // 💥 1. ยัดลงไฟล์ Excel ทันที!
     csvData.push({
-      "Order No.": item.orderNo || "-",
-      "Learner Name": `${item.customerFirstname || item.userFirstname || ''} ${item.customerLastname || item.userLastname || ''}`.trim(),
       "Course Name": finalCourseName,
       "Category": categoryName,
+      "Learner Name": `${item.customerFirstname || item.userFirstname || ''} ${item.customerLastname || item.userLastname || ''}`.trim(),
       "Price (THB)": price,
       "Date": date.toLocaleDateString('th-TH'),
-      "Time": formattedTime // ใช้เวลาที่เราประกอบร่างเอง
+      "Time": formattedTime 
     });
 
-    // 💥 2. ทำกราฟรายได้ (ครอบด้วย if เช็คปี เพื่อให้กราฟเปลี่ยนตาม Dropdown)
-    if (date.getFullYear().toString() === selectedYear) {
+    // 🎯 นับยอดคอร์สที่ขายได้ทั้งหมดแบบไม่ต้องสนใจปี (นับตามที่ Filter Dropdown วิชาไว้)
+    purchasedCount++;
+
+    // เก็บสถิติลงกราฟ (เฉพาะปีที่เลือกใน Dropdown Year)
+    if (orderYear === selectedYear) {
       const monthIndex = date.getMonth();
+      mPurchased[monthIndex] += 1;
       mIncome[monthIndex] += price;
+      
       if (!mIncomeDetails[monthIndex][finalCourseName]) {
         mIncomeDetails[monthIndex][finalCourseName] = { count: 0, total: 0 };
       }
@@ -151,13 +139,18 @@ function AnalyticsReports() {
     }
   });
 
-  setMonthlyChartData(mData);
+  setMonthlyLearnersChart(mLearners);
+  setMonthlyPurchasedChart(mPurchased);
   setMonthlyIncomeData(mIncome); 
   setMonthlyIncomeDetails(mIncomeDetails); 
   setReportData(csvData); 
-  setAnalyticsStats({ totalLearners: rawUsers.length, successfulEnrollments: enrollmentsCount });
+  
+  setAnalyticsStats({ 
+    totalLearners: totalLearnersCount, 
+    purchasedCourses: purchasedCount   
+  });
 
-}, [selectedCat, selectedYear, rawCourses, rawUsers, rawIncome]);
+}, [selectedCourse, selectedYear, rawCourses, rawUsers, rawIncome]);
 
   return (
     <div className="analytics-page">
@@ -167,18 +160,17 @@ function AnalyticsReports() {
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon>
             </svg>
-            Select Category:
+            Select Course:
           </span>
-          <select value={selectedCat} onChange={(e) => setSelectedCat(e.target.value)} className="category-select">
-            <option value="all">All Categories</option>
-            {categories.map(cat => (
-              <option key={cat.id} value={cat.id}>{cat.name}</option>
+          <select value={selectedCourse} onChange={(e) => setSelectedCourse(e.target.value)} className="category-select" style={{ maxWidth: '300px' }}>
+            <option value="all">All Courses</option>
+            {rawCourses.map(course => (
+              <option key={course.id} value={course.id}>{course.courseName}</option>
             ))}
           </select>
         </div>
 
-        {/* 👇 เปลี่ยนชื่อไฟล์ให้สื่อว่าดึงมาหมดทุกปีแล้ว (All Years) */}
-        <CSVLink data={reportData} filename={`MFU-Academy-IncomeReport-AllYears.csv`} className="btn-export">
+        <CSVLink data={reportData} filename={`MFU-Academy-AnalyticsReport-AllYears.csv`} className="btn-export">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '6px' }}>
             <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line>
           </svg>
@@ -188,18 +180,28 @@ function AnalyticsReports() {
 
       <div className="analytics-cards-grid">
         <div className="analytics-simple-card">
-          <p>Total Learners (Unique Users)</p>
+          <p>Total Learners (Users)</p>
           <h3>{analyticsStats.totalLearners.toLocaleString()}</h3>
         </div>
         <div className="analytics-simple-card">
-          <p>Successful Enrollments (Total Courses)</p>
-          <h3>{analyticsStats.successfulEnrollments.toLocaleString()}</h3>
+          <p>Purchased Courses</p>
+          <h3>{analyticsStats.purchasedCourses.toLocaleString()}</h3>
         </div>
       </div>
 
       <div className="admin-chart-container" style={{ marginTop: '24px' ,background: '#fff', padding: '24px', borderRadius: '12px', border: '1px solid #eaeaea', boxShadow: '0 2px 10px rgba(0,0,0,0.02)'}}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
           <h3 style={{ margin: 0, color: '#333', fontSize: '18px', fontWeight: '500' }}>Enrollment Trends</h3>
+          
+          <div style={{ display: 'flex', gap: '15px', fontSize: '13px', color: '#666' }}>
+            <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <div style={{width: 12, height: 12, borderRadius: '50%', background: '#2563EB'}}></div> Learners
+            </span>
+            <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <div style={{width: 12, height: 12, borderRadius: '50%', background: '#8E1523'}}></div> Purchased
+            </span>
+          </div>
+
           <select value={selectedYear} onChange={(e) => setSelectedYear(e.target.value)} style={{ padding: '8px 12px', borderRadius: '6px', border: '1px solid #ddd', cursor: 'pointer', outline: 'none' }}>
             <option value="2024">Year 2024</option>
             <option value="2025">Year 2025</option>
@@ -211,26 +213,45 @@ function AnalyticsReports() {
           <Line 
             data={{
               labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
-              datasets: [{
-                label: 'Course Enrollments',
-                data: monthlyChartData,
-                borderColor: '#8E1523', 
-                backgroundColor: '#8E1523',
-                borderWidth: 3,
-                pointBackgroundColor: '#8E1523',
-                pointRadius: 4,
-                tension: 0.4 
-              }]
+              datasets: [
+                {
+                  label: 'Learners (Users)',
+                  data: monthlyLearnersChart,
+                  borderColor: '#2563EB', 
+                  backgroundColor: '#2563EB',
+                  borderWidth: 3,
+                  pointBackgroundColor: '#2563EB',
+                  pointRadius: 4,
+                  tension: 0.4 
+                },
+                {
+                  label: 'Purchased Courses',
+                  data: monthlyPurchasedChart,
+                  borderColor: '#8E1523', 
+                  backgroundColor: '#8E1523',
+                  borderWidth: 3,
+                  pointBackgroundColor: '#8E1523',
+                  pointRadius: 4,
+                  tension: 0.4 
+                }
+              ]
             }}
             options={{
               responsive: true,
               maintainAspectRatio: false,
               plugins: { 
                 legend: { display: false },
-                tooltip: { callbacks: { label: (ctx) => `${ctx.raw} Enrollments` } } 
+                tooltip: { 
+                  callbacks: { 
+                    label: (ctx) => {
+                      if(ctx.datasetIndex === 0) return `${ctx.raw} Users`;
+                      return `${ctx.raw} Courses`;
+                    }
+                  } 
+                } 
               },
               scales: {
-                y: { beginAtZero: true, min: 0, ticks: { stepSize: 1, color: '#999', font: { size: 12 } }, grid: { color: '#f0f0f0', borderDash: [5, 5] }, title: { display: true, text: 'Enrollments', align: 'null', color: '#8E1523', font: { size: 12, weight: 'bold' } } },
+                y: { beginAtZero: true, min: 0, ticks: { stepSize: 1, color: '#999', font: { size: 12 } }, grid: { color: '#f0f0f0', borderDash: [5, 5] }, title: { display: true, text: 'Count', align: 'null', color: '#333', font: { size: 12, weight: 'bold' } } },
                 x: { grid: { display: false }, ticks: { color: '#999', font: { size: 12 } } }
               }
             }}

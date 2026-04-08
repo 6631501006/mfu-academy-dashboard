@@ -10,11 +10,10 @@ function IncomeReport() {
   const [selectedYear, setSelectedYear] = useState('all');
   const [selectedCat, setSelectedCat] = useState('all');
   
-  // 👇 เพิ่ม State สำหรับ Filter ของ Chart
   const [chartLimit, setChartLimit] = useState('10');
   
   const [totalRevenue, setTotalRevenue] = useState(0);
-  const [totalAvailableCourses, setTotalAvailableCourses] = useState(0); // 👈 State การ์ดคอร์สที่มีทั้งหมด
+  const [totalAvailableCourses, setTotalAvailableCourses] = useState(0); 
   const [totalCoursesSold, setTotalCoursesSold] = useState(0); 
   
   const [reportData, setReportData] = useState([]);
@@ -67,7 +66,6 @@ function IncomeReport() {
     setBreakdownPage(1);
     setTransactionPage(1);
 
-    // 👇 นับจำนวน "คอร์สทั้งหมด" ตาม Filter
     let filteredCourses = rawCourses;
     if (selectedCat !== 'all') {
       filteredCourses = rawCourses.filter(c => c.category?.id === parseInt(selectedCat) || c.categoryId === parseInt(selectedCat));
@@ -81,7 +79,7 @@ function IncomeReport() {
     let csvExp = [];
 
     rawIncome.forEach(item => {
-      const dateStr = item.orderDateTime || item.createdAt;
+      const dateStr = item.createdAt || item.orderDateTime;
       if (!dateStr) return;
       const date = new Date(dateStr);
       
@@ -117,7 +115,12 @@ function IncomeReport() {
         amount: price
       });
 
-      // ยัดลง CSV (ไม่มีข้อมูล Total Courses ที่เพิ่งเพิ่มมา)
+      // 💥 เพิ่มสูตรประกอบร่างเวลาตรงนี้ ก่อนยัดลง CSV!
+      const hours = String(date.getHours()).padStart(2, '0');
+      const minutes = String(date.getMinutes()).padStart(2, '0');
+      const seconds = String(date.getSeconds()).padStart(2, '0');
+      const formattedTime = `${hours}:${minutes}:${seconds}`;
+
       csvExp.push({
         "Order No.": item.orderNo || "-",
         "Learner Name": learnerName,
@@ -125,7 +128,7 @@ function IncomeReport() {
         "Category": catName,
         "Price (THB)": price,
         "Date": date.toLocaleDateString('th-TH'),
-        "Time": date.toLocaleTimeString('th-TH')
+        "Time": formattedTime // ✅ ตอนนี้มีตัวแปรให้เรียกใช้แล้ว ไม่ Error แน่นอน!
       });
     });
 
@@ -163,10 +166,7 @@ function IncomeReport() {
   const totalTransactionPages = Math.ceil(recentTransactions.length / itemsPerPage);
   const currentTransactionData = recentTransactions.slice((transactionPage - 1) * itemsPerPage, transactionPage * itemsPerPage);
 
-  // 👇 จัดการข้อมูลกราฟให้สัมพันธ์กับ Filter (Top 10 / All)
   const displayedChartData = chartLimit === 'all' ? breakdownData : breakdownData.slice(0, 10);
-  
-  // คำนวณความสูงของกล่องกราฟ ถ้ายาวมากให้ยืดออกเพื่อไม่ให้แท่งเบียดกัน
   const dynamicChartHeight = chartLimit === 'all' ? Math.max(350, displayedChartData.length * 35) : 350;
 
   const chartData = {
@@ -218,7 +218,6 @@ function IncomeReport() {
         </CSVLink>
       </div>
 
-      {/* --- 👇 ปรับ Grid การ์ด ให้มี 3 ใบ ขนาดสมดุลกัน --- */}
       <div className="analytics-cards-grid" style={{ marginBottom: '24px', display: 'flex', gap: '16px' }}>
         <div className="income-revenue-card" style={{ flex: 1, margin: 0 }}>
           <div className="revenue-card-header">
@@ -228,7 +227,6 @@ function IncomeReport() {
           <p className="revenue-subtext">Filtered by {selectedYear === 'all' ? 'All Years' : `Year ${selectedYear}`}</p>
         </div>
 
-        {/* 🌟 เพิ่มการ์ด Total Courses */}
         <div className="income-revenue-card" style={{ flex: 1, margin: 0, backgroundColor: '#f0f4f8', border: '1px solid #d9e2ec' }}>
           <div className="revenue-card-header">
             <span className="revenue-icon" style={{ backgroundColor: '#334E68' }}>📚</span><h2 style={{ color: '#334E68', fontSize: '16px' }}>Total Courses</h2>
@@ -239,14 +237,13 @@ function IncomeReport() {
 
         <div className="income-revenue-card" style={{ flex: 1, margin: 0, backgroundColor: '#fcf8f2', border: '1px solid #f2e3c6' }}>
           <div className="revenue-card-header">
-            <span className="revenue-icon" style={{ backgroundColor: '#D4A038' }}>📖</span><h2 style={{ color: '#D4A038', fontSize: '16px' }}>Courses Sold</h2>
+            <span className="revenue-icon" style={{ backgroundColor: '#D4A038' }}>📖</span><h2 style={{ color: '#D4A038', fontSize: '16px' }}>Purchased Course</h2>
           </div>
           <h1 className="revenue-amount" style={{ color: '#8E1523' }}>{totalCoursesSold}</h1>
           <p className="revenue-subtext">Unique courses generating income</p>
         </div>
       </div>
 
-      {/* --- 👇 อัปเดตกราฟแท่ง ให้มีปุ่ม Filter Top 10 / All --- */}
       <div className="admin-chart-container" style={{ marginBottom: '24px', background: '#fff', padding: '24px', borderRadius: '12px', border: '1px solid #eaeaea', boxShadow: '0 2px 10px rgba(0,0,0,0.02)' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
           <h3 style={{ margin: 0, color: '#333', fontSize: '18px', fontWeight: '500' }}>Revenue by Course</h3>
@@ -261,7 +258,6 @@ function IncomeReport() {
           </select>
         </div>
 
-        {/* 🌟 ถ้าเลือก All ให้มี Scroll Bar โผล่มาแทน เพื่อไม่ให้ Layout หน้าพัง */}
         <div style={{ height: '350px', width: '100%', overflowY: chartLimit === 'all' ? 'auto' : 'hidden', paddingRight: chartLimit === 'all' ? '10px' : '0' }}>
           <div style={{ height: `${dynamicChartHeight}px`, position: 'relative' }}>
             {breakdownData.length > 0 ? (
