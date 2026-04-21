@@ -86,7 +86,7 @@
     border-bottom: 1px solid #eaeaea;
   }
   
-  /* ใช้โค้ดนี้แทน .profile-avatar ทั้งหมด */
+
 .profile-avatar {
     width: 45px;
     height: 45px;
@@ -94,14 +94,14 @@
     display: flex;
     justify-content: center;
     align-items: center;
-    overflow: hidden; /* เพิ่มคำสั่งนี้เพื่อไม่ให้ขอบรูปทะลุวงกลม */
+    overflow: hidden; 
   }
   
   /* --- พื้นที่เนื้อหาสีขาว --- */
   .admin-content-area {
     padding: 40px;
     flex: 1;
-    overflow-y: auto; /* ให้เลื่อนลงได้ถ้าเนื้อหายาว */
+    overflow-y: auto; 
   }
   
   .blank-white-page {
@@ -115,7 +115,7 @@
   }
   /* --- ส่วนจัดการ Profile & Dropdown --- */
 .admin-profile-container {
-    position: relative; /* สำคัญมาก เพื่อให้ Dropdown เกาะอยู่ใต้ Profile */
+    position: relative; 
   }
   
   .admin-profile-trigger {
@@ -135,7 +135,7 @@
   /* กล่อง Dropdown */
   .profile-dropdown {
     position: absolute;
-    top: 100%; /* ให้เริ่มต่อจากขอบล่างของ Profile พอดี */
+    top: 100%; 
     right: 0;
     margin-top: 10px;
     background: white;
@@ -145,7 +145,7 @@
     width: 200px;
     padding: 10px 0;
     z-index: 1000;
-    animation: slideDown 0.2s ease-out; /* เพิ่มแอนิเมชันเด้งลงมา */
+    animation: slideDown 0.2s ease-out; 
   }
   
   @keyframes slideDown {
@@ -177,9 +177,7 @@
   .logout-btn:hover {
     color: #8E1523;
   }
-  /* ========================================= */
-/* --- ส่วนของ Stat Cards ใน Admin Dashboard --- */
-/* ========================================= */
+  
 .admin-stat-grid {
     display: flex;
     gap: 24px;
@@ -223,39 +221,36 @@
     flex-shrink: 0;
   }
   
-  /* ควบคุมสีแต่ละกล่อง */
+  
   .green-icon { background-color: #34A853; }
-  .red-icon { background-color: #8E1523; } /* สีแดง MFU */
+  .red-icon { background-color: #8E1523; } 
   .blue-icon { background-color: #2D68F8; }
 
-  /* จัดการเนื้อหาภายในกล่องกราฟให้เป็นแนวตั้ง */
+  
 .doughnut-chart-content {
   display: flex;
   flex-direction: column;
-  align-items: center; /* จัดให้ทุกอย่างอยู่กึ่งกลางแนวนอน */
+  align-items: center; 
   width: 100%;
 }
 
-/* ควบคุมขนาดวงกลมให้อยู่ตรงกลาง */
 .doughnut-wrapper {
   position: relative;
-  height: 300px; /* ปรับขนาดความสูงตามต้องการ */
-  width: 300px;  /* ปรับขนาดความกว้างตามต้องการ */
-  margin-bottom: 40px; /* ระยะห่างระหว่างวงกลมกับคำอธิบายด้านล่าง */
+  height: 300px; 
+  width: 300px;  
+  margin-bottom: 40px; 
 }
 
-/* จัดเลย์เอาต์คำอธิบายด้านล่างเป็น Grid 2 คอลัมน์ */
 .custom-legend-bottom {
   display: grid;
-  grid-template-columns: 1fr 1fr; /* แบ่งซ้าย-ขวา 2 ฝั่งแบบในรูป */
-  gap: 20px 60px; /* ระยะห่างระหว่างแถว และ ระยะห่างระหว่างคอลัมน์ */
+  grid-template-columns: 1fr 1fr; 
+  gap: 20px 60px; 
   width: 100%;
-  max-width: 800px; /* จำกัดความกว้างเพื่อความสวยงาม */
+  max-width: 800px; 
   padding: 20px;
-  border-top: 1px solid #f0f0f0; /* เส้นคั่นบางๆ ด้านบนคำอธิบาย */
+  border-top: 1px solid #f0f0f0; 
 }
 
-/* สไตล์แต่ละรายการในคำอธิบาย */
 .legend-item-horizontal {
   display: flex;
   justify-content: space-between;
@@ -285,9 +280,6 @@
   font-weight: 500;
   color: #333;
 }
-/* ========================================= */
-/* 8. Analytics & Reports Page Styles */
-/* ========================================= */
 
 .analytics-filter-container {
   background: #ffffff;
@@ -347,10 +339,9 @@
   border-color: #ddd;
 }
 
-/* การ์ดแบบมินิมอล (Simple Cards) */
 .analytics-cards-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr; /* แบ่งครึ่งจอ */
+  grid-template-columns: 1fr 1fr; 
   gap: 24px;
 }
 

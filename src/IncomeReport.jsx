@@ -304,7 +304,7 @@ function IncomeReport() {
             style={{ padding: '6px 12px', borderRadius: '6px', border: '1px solid #ddd', outline: 'none', cursor: 'pointer', fontSize: '14px' }}
           >
             <option value="10">Top 10 Courses</option>
-            <option value="all">Show All Courses</option>
+            <option value="all">All Courses</option>
           </select>
         </div>
         
@@ -326,7 +326,7 @@ function IncomeReport() {
                       beginAtZero: true, 
                       ticks: { color: '#999', font: { size: 12 }, callback: (val) => '฿' + val.toLocaleString() }, 
                       grid: { color: '#f0f0f0', borderDash: [5, 5] }, 
-                      title: { display: true, text: 'Total Revenue (THB)', align: 'end', color: '#D4A038', font: { size: 12, weight: 'bold' } } 
+                      title: { display: true, text: 'Total Revenue (THB)', color: '#D4A038', font: { size: 12, weight: 'bold' } } 
                     }, 
                     y: { 
                       grid: { display: false }, 
