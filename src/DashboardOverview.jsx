@@ -192,24 +192,21 @@ function DashboardOverview() {
         </div>
       </div>
 
-      {/* --- Line Chart (Enrollments & Income) --- */}
+      {/* --- Line Chart (Monthly Course Enrollments) --- */}
       <div className="admin-chart-container" style={{ marginTop: '30px', background: '#fff', padding: '24px', borderRadius: '12px', border: '1px solid #eaeaea', boxShadow: '0 2px 10px rgba(0,0,0,0.02)' }}>
-        
+
         {/* Header กราฟ */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-          <h3 style={{ margin: 0, color: '#333', fontSize: '18px', fontWeight: '500' }}>Monthly Course Enrollments & Income</h3>
-          
+          <h3 style={{ margin: 0, color: '#333', fontSize: '18px', fontWeight: '500' }}>Monthly Course Enrollments</h3>
+
           <div style={{ display: 'flex', gap: '20px', alignItems: 'center' }}>
             {/* คลิกเพื่อซ่อน/แสดงเส้นกราฟ */}
             <div style={{ display: 'flex', gap: '15px', fontSize: '13px', color: '#666', cursor: 'pointer', userSelect: 'none' }}>
               <span onClick={() => setShowLearners(!showLearners)} style={{ display: 'flex', alignItems: 'center', gap: '6px', opacity: showLearners ? 1 : 0.4, transition: '0.2s', fontWeight: showLearners ? '600' : 'normal' }}>
                 <div style={{ width: 12, height: 12, borderRadius: '50%', background: '#8E1523' }}></div> Learners
               </span>
-              <span onClick={() => setShowIncome(!showIncome)} style={{ display: 'flex', alignItems: 'center', gap: '6px', opacity: showIncome ? 1 : 0.4, transition: '0.2s', fontWeight: showIncome ? '600' : 'normal' }}>
-                <div style={{ width: 12, height: 12, borderRadius: '50%', background: '#D4A038' }}></div> Income
-              </span>
             </div>
-            
+
             <select value={selectedYear} onChange={(e) => setSelectedYear(e.target.value)} style={{ padding: '8px 12px', borderRadius: '6px', border: '1px solid #ddd', cursor: 'pointer', outline: 'none' }}>
               {/* Filter ปีในกราฟ*/}
               <option value="2024">2024</option>
@@ -221,80 +218,131 @@ function DashboardOverview() {
 
         {/* ตัวกราฟ Line */}
         <div style={{ height: '350px', width: '100%' }}>
-          <Line 
+          <Line
             data={{
               labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
               datasets: [
-                { 
-                  label: 'Learners', 
-                  data: monthlyLearnersData, 
-                  hidden: !showLearners, 
-                  borderColor: '#8E1523', 
-                  backgroundColor: '#8E1523', 
-                  borderWidth: 3, 
-                  pointBackgroundColor: '#8E1523', 
-                  pointRadius: 4, 
-                  tension: 0.4, 
-                  yAxisID: 'y' 
-                },
-                { 
-                  label: 'Income', 
-                  data: monthlyIncomeData, 
-                  hidden: !showIncome, 
-                  borderColor: '#D4A038', 
-                  backgroundColor: '#D4A038', 
-                  borderWidth: 3, 
-                  pointBackgroundColor: '#D4A038', 
-                  pointRadius: 4, 
-                  tension: 0.4, 
-                  yAxisID: 'y1' 
+                {
+                  label: 'Learners',
+                  data: monthlyLearnersData,
+                  hidden: !showLearners,
+                  borderColor: '#8E1523',
+                  backgroundColor: '#8E1523',
+                  borderWidth: 3,
+                  pointBackgroundColor: '#8E1523',
+                  pointRadius: 4,
+                  tension: 0.4,
+                  yAxisID: 'y'
                 }
               ]
             }}
-            options={{ 
-              responsive: true, 
-              maintainAspectRatio: false, 
-              plugins: { 
-                legend: { display: false }, 
-                tooltip: { 
-                  callbacks: { 
-                    label: (ctx) => { 
-                      if (ctx.datasetIndex === 0) return `${ctx.raw} Learners`; 
-                      return `฿${ctx.raw.toLocaleString()} THB`; 
-                    } 
-                  } 
-                } 
-              }, 
-              scales: { 
-                y: { 
-                  type: 'linear', 
-                  display: showLearners, 
-                  position: 'left', 
-                  beginAtZero: true, 
-                  min: 0, 
-                  ticks: { stepSize: 1, color: '#999', font: { size: 12 } }, 
-                  grid: { color: '#f0f0f0', borderDash: [5, 5] }, 
-                  title: { display: true, text: 'Learners', align: 'center', color: '#8E1523', font: { size: 12, weight: 'bold' } } 
+            options={{
+              responsive: true,
+              maintainAspectRatio: false,
+              plugins: {
+                legend: { display: false },
+                tooltip: {
+                  callbacks: {
+                    label: (ctx) => `${ctx.raw} Learners`
+                  }
+                }
+              },
+              scales: {
+                y: {
+                  type: 'linear',
+                  display: showLearners,
+                  position: 'left',
+                  beginAtZero: true,
+                  min: 0,
+                  ticks: { stepSize: 1, color: '#999', font: { size: 12 } },
+                  grid: { color: '#f0f0f0', borderDash: [5, 5] },
+                  title: { display: true, text: 'Learners', align: 'center', color: '#8E1523', font: { size: 12, weight: 'bold' } }
                 },
-                y1: { 
-                  type: 'linear', 
-                  display: showIncome, 
-                  position: 'right', 
-                  beginAtZero: true, 
-                  min: 0, 
-                  ticks: { 
-                    color: '#999', 
-                    font: { size: 12 }, 
-                    callback: function(value) { return '฿' + value.toLocaleString(); } 
-                  }, 
-                  grid: { drawOnChartArea: false }, 
-                  title: { display: true, text: 'Income (THB)', align: 'center', color: '#D4A038', font: { size: 12, weight: 'bold' } } 
-                }, 
-                x: { 
-                  grid: { display: false }, 
-                  ticks: { color: '#999', font: { size: 12 } } 
-                } 
-              } 
+                x: {
+                  grid: { display: false },
+                  ticks: { color: '#999', font: { size: 12 } }
+                }
+              }
+            }}
+          />
+        </div>
+      </div>
+
+      {/* --- Line Chart (Income) --- */}
+      <div className="admin-chart-container" style={{ marginTop: '30px', background: '#fff', padding: '24px', borderRadius: '12px', border: '1px solid #eaeaea', boxShadow: '0 2px 10px rgba(0,0,0,0.02)' }}>
+
+        {/* Header กราฟ */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+          <h3 style={{ margin: 0, color: '#333', fontSize: '18px', fontWeight: '500' }}>Monthly Income</h3>
+
+          <div style={{ display: 'flex', gap: '20px', alignItems: 'center' }}>
+            {/* คลิกเพื่อซ่อน/แสดงเส้นกราฟ */}
+            <div style={{ display: 'flex', gap: '15px', fontSize: '13px', color: '#666', cursor: 'pointer', userSelect: 'none' }}>
+              <span onClick={() => setShowIncome(!showIncome)} style={{ display: 'flex', alignItems: 'center', gap: '6px', opacity: showIncome ? 1 : 0.4, transition: '0.2s', fontWeight: showIncome ? '600' : 'normal' }}>
+                <div style={{ width: 12, height: 12, borderRadius: '50%', background: '#D4A038' }}></div> Income
+              </span>
+            </div>
+
+            <select value={selectedYear} onChange={(e) => setSelectedYear(e.target.value)} style={{ padding: '8px 12px', borderRadius: '6px', border: '1px solid #ddd', cursor: 'pointer', outline: 'none' }}>
+              {/* Filter ปีในกราฟ*/}
+              <option value="2024">2024</option>
+              <option value="2025">2025</option>
+              <option value="2026">2026</option>
+            </select>
+          </div>
+        </div>
+
+        {/* ตัวกราฟ Line */}
+        <div style={{ height: '350px', width: '100%' }}>
+          <Line
+            data={{
+              labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+              datasets: [
+                {
+                  label: 'Income',
+                  data: monthlyIncomeData,
+                  hidden: !showIncome,
+                  borderColor: '#D4A038',
+                  backgroundColor: '#D4A038',
+                  borderWidth: 3,
+                  pointBackgroundColor: '#D4A038',
+                  pointRadius: 4,
+                  tension: 0.4,
+                  yAxisID: 'y'
+                }
+              ]
+            }}
+            options={{
+              responsive: true,
+              maintainAspectRatio: false,
+              plugins: {
+                legend: { display: false },
+                tooltip: {
+                  callbacks: {
+                    label: (ctx) => `฿${ctx.raw.toLocaleString()} THB`
+                  }
+                }
+              },
+              scales: {
+                y: {
+                  type: 'linear',
+                  display: showIncome,
+                  position: 'left',
+                  beginAtZero: true,
+                  min: 0,
+                  ticks: {
+                    color: '#999',
+                    font: { size: 12 },
+                    callback: function(value) { return '฿' + value.toLocaleString(); }
+                  },
+                  grid: { color: '#f0f0f0', borderDash: [5, 5] },
+                  title: { display: true, text: 'Income (THB)', align: 'center', color: '#D4A038', font: { size: 12, weight: 'bold' } }
+                },
+                x: {
+                  grid: { display: false },
+                  ticks: { color: '#999', font: { size: 12 } }
+                }
+              }
             }}
           />
         </div>
